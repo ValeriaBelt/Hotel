@@ -1,0 +1,131 @@
+div.muestra div.descripcion {
+    text-align: center;
+    padding: 15px;
+}
+
+div.galeria {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+div.muestra {
+    border: 1px solid transparent; 
+    padding: 5px;
+    border-radius: 8px;
+    transition: border-color 0.3s ease; 
+    margin: 5px; 
+}
+
+div.muestra:hover {
+    border: 1px solid #333;
+}
+
+div.muestra img{
+    width: 500px;
+    height: 300px;
+    border-radius: 8px;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color:#333;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.logo {
+    height: 60px;
+    width: 60px;
+    margin-right: 10px;
+    object-fit: cover;
+    border-radius: 12px;
+    padding: 5px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(30, 152, 246);
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #b0f2f6;
+    color: #333;
+    margin: 0;
+    padding: 0 20px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #b0f2f6;
+    border-radius: 8px;
+    color: #333;
+}
+
+/*responsive*/
+@media (max-width: 900px) {
+header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.logo-container {
+    justify-content: center;
+    width: 100%;
+}
+
+nav ul {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.galeria {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+}
+}
+
+/* Responsive: móviles */
+@media (max-width: 600px) {
+body {
+    padding: 0 5px;
+    background-color: #b0f2f6; 
+}
+
+header {
+    padding: 10px 5px;
+}
+
+.logo {
+    width: 70px;
+    height: 70px;
+}
+
+nav ul {
+    font-size: 1rem;
+}
+
+.galeria {
+    grid-template-columns: repeat(1, 1fr);
+    gap: 20px;
+    justify-items: center;
+}
+}
