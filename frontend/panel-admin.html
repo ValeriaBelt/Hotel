@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/jpeg" href="img/Logo.jpg">
+    <title>Panel de Administración - HotelSys</title>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/Logo.jpg" alt="HotelSys" class="logo">
+        </div>
+        <div class="titulo-subtitulo">
+            <h1>Panel de Administración</h1>     
+            <h4 class="subtitulo">Gestión de Habitaciones</h4>
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="index.html">Ver Sitio</a></li>
+                <!-- Podríamos agregar un botón de "Cerrar Sesión" aquí en el futuro -->
+            </ul>
+        </nav>
+    </header>
+
+    <main style="padding: 40px;">
+        <h2 id="welcome-message">¡Bienvenido!</h2>
+        <p>Desde aquí podrás gestionar las habitaciones del hotel.</p>
+
+        <hr style="margin: 40px 0;">
+
+        <h3>Añadir Nueva Habitación</h3>
+        <form id="form-add-habitacion" class="admin" style="margin-top: 20px;">
+            <div id="add-message"></div> <!-- Para mensajes de éxito/error -->
+            <label for="tipo">Tipo de Habitación:</label><br>
+            <input type="text" id="tipo" name="tipo" placeholder="Ej: Habitación Doble" required><br>
+
+            <label for="precio">Precio por Noche:</label><br>
+            <input type="number" id="precio" name="precio" placeholder="Ej: 150000" required><br>
+
+            <label for="capacidad">Capacidad (personas):</label><br>
+            <input type="number" id="capacidad" name="capacidad" placeholder="Ej: 2" required><br>
+
+            <label for="servicios">Servicios:</label><br>
+            <textarea id="servicios" name="servicios" placeholder="Ej: Wi-Fi, TV, Baño privado" required></textarea><br><br>
+
+            <input type="submit" value="Añadir Habitación">
+        </form>
+    </main>
+    
+    <footer>
+        <p>© 2025 HotelSys. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="panel-admin.js"></script>
+    <script src="gestion-habitaciones.js"></script> <!-- Nuevo script -->
+</body>
+</html>

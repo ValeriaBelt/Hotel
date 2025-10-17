@@ -23,16 +23,19 @@
             </ul>
         </nav>
     </header>
-    <form action="/action_page.php" class="admin">
+    <!-- Quitamos el 'action' porque lo manejaremos con JavaScript -->
+    <form class="admin">
         <label for="correo">Correo:</label><br>
-        <input type="text" id="correo" name="correo" placeholder="Correo electrónico "><br>
+        <input type="email" id="correo" name="correo" placeholder="Correo electrónico" required><br>
         <label for="contrasena">Contraseña:</label><br>
-        <input type="text" id="contrasena" name="contrasena" placeholder="Ingresa tu contraseña"><br><br>
+        <input type="password" id="contrasena" name="contrasena" placeholder="Ingresa tu contraseña" required autocomplete="current-password"><br><br>
         <input type="submit" value="Iniciar Sesión">
     </form>
 
     <footer>
         <p>© 2025 HotelSys. Todos los derechos reservados.</p>
     </footer>
+
+    <script src="admin.js"></script>
 </body>
 </html>
