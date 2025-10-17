@@ -12,34 +12,60 @@
         <div class="logo">
             <img src="img/Logo.jpg" alt="HotelSys" class="logo">
         </div>
+        <div class="titulo-subtitulo">
+            <h1>Bienvenido a HotelSys</h1>     
+            <h4 class="subtitulo">Donde podrás disfrutar de una estadia de lujo</h4>
+        </div>
         <nav class="menu">
             <ul>
-                <li><a href="secciones/administrador.html">Administrador</a></li>
+                <li><a href="reservas.html">Reservas</a></li>
+                <li><a href="administrador.html">Administrador</a></li>
             </ul>
         </nav>
     </header>
     <div class="galeria">
         <div class="muestra">
             <a target="_blank" href="img/Habitacion1CamaDoble.jpg"><img src="img/Habitacion1CamaDoble.jpg" alt="Habitacion con cama doble" width="500" height="300"></a>
-            <div class="descripcion">Habitaciones con cama doble</div>
+            <div class="descripcion">
+                <p>Habitaciones con cama doble</p>
+                <button class="btn-detalles" data-habitacion-id="1">Ver más detalles</button>
+                <a href="reservas.html" class="btn-reservar">Reservar</a>
+                <div class="detalles-habitacion"></div>
+            </div>
         </div>
         <div class="muestra"> 
             <a target="_blank" href="img/Habitacion1CmaSencilla.jpg"><img src="img/Habitacion1CmaSencilla.jpg" alt="Habitacion con cama sencilla" width="500" height="300"></a>
-            <div class="descripcion">Habitaciones con cama sencilla</div>
+            <div class="descripcion">
+                <p>Habitaciones con cama sencilla</p>
+                <button class="btn-detalles" data-habitacion-id="2">Ver más detalles</button>
+                <a href="reservas.html" class="btn-reservar">Reservar</a>
+                <div class="detalles-habitacion"></div>
+            </div>
         </div>
         <div class="muestra">    
             <a target="_blank" href="img/Habitacion2CamaSemidoble.jpg"><img src="img/Habitacion2CamaSemidoble.jpg" alt="Habitacion con dos camas semidobles" width="500" height="300"></a>
-            <div class="descripcion">Habitaciones con 2 camas semidobles</div>
+            <div class="descripcion">
+                <p>Habitaciones con 2 camas semidobles</p>
+                <button class="btn-detalles" data-habitacion-id="3">Ver más detalles</button>
+                <div class="detalles-habitacion"></div>
+                <a href="reservas.html" class="btn-reservar">Reservar</a>
+                
+            </div>
         </div>
         <div class="muestra">
             <a target="_blank" href="img/Habitacion2CamaSencilla.jpg"><img src="img/Habitacion2CamaSencilla.jpg" alt="Habitacion con dos camas sencillas" width="500" height="300"></a>
-            <div class="descripcion">Habitaciones con 2 camas sencillas</div>
+            <div class="descripcion">
+                <p>Habitaciones con 2 camas sencillas</p>
+                <button class="btn-detalles" data-habitacion-id="4">Ver más detalles</button>
+                <div class="detalles-habitacion"></div>
+                <a href="reservas.html" class="btn-reservar">Reservar</a>
+                
+            </div>
         </div>
     </div>
+    <script src="script.js"></script>
+    <footer>
+        <p>© 2025 HotelSys. Todos los derechos reservados.</p>
+    </footer>
 </body>
-
-<footer>
-    <p>© 2025 HotelSys. Todos los derechos reservados.</p>
-</footer>
-
 </html>
