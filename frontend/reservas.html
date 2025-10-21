@@ -24,13 +24,37 @@
         </nav>
     </header>
 
-    <main style="text-align: center; padding: 40px;">
-        <h2>Página de Reservaciones</h2>
-        <p>Aquí irá el formulario para que los clientes puedan reservar una habitación.</p>
+    <main>
+        <h2>Busca tu Habitación Ideal</h2>
+        <form id="form-buscar-disponibilidad" class="reservas">
+            <div>
+                <label for="fecha-llegada">Fecha de Llegada:</label><br>
+                <input type="date" id="fecha-llegada" name="fecha-llegada" required>
+            </div>
+            <div>
+                <label for="fecha-salida">Fecha de Salida:</label><br>
+                <input type="date" id="fecha-salida" name="fecha-salida" required>
+            </div>
+            <div>
+                <label for="tipo-habitacion">Tipo de Habitación:</label><br>
+                <select id="tipo-habitacion" name="tipo-habitacion">
+                    <option value="">Todos los tipos</option>
+                    
+                </select>
+            </div>
+            <button type="submit">Buscar Disponibilidad</button>
+        </form>
+
+        <div id="resultados-disponibilidad" class="galeria">
+            
+            <p>Por favor, selecciona las fechas para ver la disponibilidad.</p>
+        </div>
     </main>
     
     <footer>
         <p>© 2025 HotelSys. Todos los derechos reservados.</p>
     </footer>
+
+    <script src="reservas.js"></script>
 </body>
 </html>

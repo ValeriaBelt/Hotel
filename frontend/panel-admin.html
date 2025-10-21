@@ -19,7 +19,7 @@
         <nav class="menu">
             <ul>
                 <li><a href="index.html">Ver Sitio</a></li>
-                <!-- Podríamos agregar un botón de "Cerrar Sesión" aquí en el futuro -->
+
             </ul>
         </nav>
     </header>
@@ -32,18 +32,18 @@
 
         <h3>Añadir Nueva Habitación</h3>
         <form id="form-add-habitacion" class="admin" style="margin-top: 20px;">
-            <div id="add-message"></div> <!-- Para mensajes de éxito/error -->
+            <div id="add-message"></div> 
+            <label for="numero">Numero de habitación</label></br>
+            <input type="number" id="numero" name="numero" placeholder="Ej: 101, 202" required><br>
+
             <label for="tipo">Tipo de Habitación:</label><br>
-            <input type="text" id="tipo" name="tipo" placeholder="Ej: Habitación Doble" required><br>
+            <input type="text" id="tipo" name="tipo" placeholder="Ej: Habitación Doble, sencilla, suite, etc." required><br>
+
+            <label for="descripcion">Descripción:</label><br>
+            <textarea id="descripcion" name="descripcion" placeholder="Ej: Wi-Fi, TV, Baño privado" required></textarea><br><br>
 
             <label for="precio">Precio por Noche:</label><br>
-            <input type="number" id="precio" name="precio" placeholder="Ej: 150000" required><br>
-
-            <label for="capacidad">Capacidad (personas):</label><br>
-            <input type="number" id="capacidad" name="capacidad" placeholder="Ej: 2" required><br>
-
-            <label for="servicios">Servicios:</label><br>
-            <textarea id="servicios" name="servicios" placeholder="Ej: Wi-Fi, TV, Baño privado" required></textarea><br><br>
+            <input type="number" id="precio" name="precio" placeholder="Ej: 150000" required><br>            
 
             <input type="submit" value="Añadir Habitación">
         </form>
@@ -54,6 +54,6 @@
     </footer>
 
     <script src="panel-admin.js"></script>
-    <script src="gestion-habitaciones.js"></script> <!-- Nuevo script -->
+    <script src="gestion-habitaciones.js"></script> 
 </body>
 </html>

@@ -7,10 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
 
             const habitacionData = {
-                tipo: document.getElementById('tipo').value,
+                numero: document.getElementById('numero').value, 
+                tipo: document.getElementById('tipo').value, 
+                descripcion: document.getElementById('descripcion').value,
                 precio: document.getElementById('precio').value,
-                capacidad: document.getElementById('capacidad').value,
-                servicios: document.getElementById('servicios').value,
+                
             };
 
             try {
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     messageDiv.textContent = result.message;
                     messageDiv.style.color = 'green';
-                    addForm.reset(); // Limpia el formulario
+                    addForm.reset(); 
                 } else {
                     messageDiv.textContent = result.message || 'Error al añadir la habitación.';
                     messageDiv.style.color = 'red';
