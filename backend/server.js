@@ -9,18 +9,28 @@ app.use(express.json());
 
 
 const dbConfig = {
-    connectionString: 'Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\stiven;Database=HotelSys;Trusted_Connection=yes;'
+    connectionString: 'Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\valeriat;Database=HotelSys;Trusted_Connection=yes;'
 };
 
 
 let pool; 
+
+app.get('/api/habitaciones/all', async (req, res) => {
+    try {
+        const result = await pool.request().query('SELECT idHabitacion, NumeroHabitacion, Tipo, Descripcion, PrecioPorNoche FROM Habitaciones ORDER BY NumeroHabitacion');
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Error al obtener todas las habitaciones:', err.stack);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
 app.get('/api/habitaciones/:id', async (req, res) => {
-    const habitacionId = req.params.id;
+    const idHabitacion = req.params.id;
 
     try { 
         const result = await pool.request()
-            .input('id', sql.NVarChar, habitacionId)
-            .query('SELECT * FROM Habitaciones WHERE HabitacionID = @id');
+            .input('id', sql.NVarChar, idHabitacion)
+            .query('SELECT * FROM Habitaciones WHERE idHabitacion = @id');
 
         if (result.recordset.length > 0) {
             res.json(result.recordset[0]); 
@@ -85,7 +95,33 @@ app.post('/api/habitaciones', async (req, res) => {
     }
 });
 
-// NUEVA RUTA: Obtener tipos de habitación únicos para el filtro
+app.put('/api/habitaciones/:id', async (req, res) => {
+    const { id } = req.params;
+    const { tipo, descripcion, precio } = req.body;
+
+    if (!tipo || tipo.trim() === '' || precio === undefined || precio === null || precio === '') {
+        return res.status(400).json({ message: 'Todos los campos (tipo, descripción y precio) son obligatorios.' });
+    }
+
+    try {
+        const result = await pool.request()
+            .input('id', sql.Int, id)
+            .input('tipo', sql.NVarChar, tipo)
+            .input('descripcion', sql.NVarChar, descripcion)
+            .input('precio', sql.Decimal(10, 2), precio)
+            .query('UPDATE Habitaciones SET Tipo = @tipo, Descripcion = @descripcion, PrecioPorNoche = @precio WHERE idHabitacion = @id');
+
+        if (result.rowsAffected[0] > 0) {
+            res.json({ message: 'Habitación actualizada correctamente.' });
+        } else {
+            res.status(404).json({ message: 'No se encontró la habitación para actualizar.' });
+        }
+    } catch (err) {
+        console.error('Error al actualizar la habitación:', err.stack);
+        res.status(500).json({ message: 'Error interno del servidor al actualizar la habitación.' });
+    }
+});
+
 app.get('/api/habitaciones/tipos', async (req, res) => {
     try {
         const result = await pool.request().query('SELECT DISTINCT Tipo FROM Habitaciones ORDER BY Tipo');
@@ -96,7 +132,6 @@ app.get('/api/habitaciones/tipos', async (req, res) => {
     }
 });
 
-// NUEVA RUTA: Buscar habitaciones disponibles
 app.get('/api/habitaciones/disponibles', async (req, res) => {
     const { llegada, salida, tipo } = req.query;
 
@@ -109,7 +144,7 @@ app.get('/api/habitaciones/disponibles', async (req, res) => {
             SELECT * FROM Habitaciones h
             WHERE NOT EXISTS (
                 SELECT 1 FROM Reservas r
-                WHERE r.HabitacionID = h.HabitacionID
+                WHERE r.idHabitacion = h.idHabitacion
                 AND (
                     (r.FechaLlegada < @salida AND r.FechaSalida > @llegada)
                 )

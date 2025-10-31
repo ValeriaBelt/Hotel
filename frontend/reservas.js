@@ -47,13 +47,19 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             resultadosDiv.innerHTML = '<p style="text-align: center;">Buscando...</p>';
             const response = await fetch(url);
-            const habitaciones = await response.json();
 
+            // Verificamos si la respuesta del servidor fue exitosa (status 200-299)
+            if (!response.ok) {
+                const errorData = await response.json(); // Intentamos leer el mensaje de error JSON del servidor
+                throw new Error(errorData.message || `Error del servidor: ${response.status}`);
+            }
+
+            const habitaciones = await response.json();
             mostrarResultados(habitaciones);
 
         } catch (error) {
             console.error('Error al buscar disponibilidad:', error);
-            resultadosDiv.innerHTML = '<p style="color: red; text-align: center;">Error al conectar con el servidor.</p>';
+            resultadosDiv.innerHTML = `<p style="color: red; text-align: center;">${error.message || 'Error al conectar con el servidor.'}</p>`;
         }
     });
 

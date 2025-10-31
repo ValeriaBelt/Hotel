@@ -30,22 +30,39 @@
 
         <hr style="margin: 40px 0;">
 
-        <h3>Añadir Nueva Habitación</h3>
-        <form id="form-add-habitacion" class="admin" style="margin-top: 20px;">
-            <div id="add-message"></div> 
-            <label for="numero">Numero de habitación</label></br>
-            <input type="number" id="numero" name="numero" placeholder="Ej: 101, 202" required><br>
+        <h3>Modificar Habitación</h3>
+        <form id="form-edit-habitacion" class="admin" style="margin-top: 20px;">
+            <div id="edit-message"></div> 
+            <label for="habitacion-select">Selecciona una Habitación:</label></br>
+            <select id="habitacion-select" name="habitacion-select" required>
+                <option value="">-- Elige una habitación --</option>
+            </select><br>
 
             <label for="tipo">Tipo de Habitación:</label><br>
-            <input type="text" id="tipo" name="tipo" placeholder="Ej: Habitación Doble, sencilla, suite, etc." required><br>
+            <select id="tipo" name="tipo" required>
+                <option value="">-- Selecciona un tipo --</option>
+                <option value="1 Cama Sencilla">1 Cama Sencilla</option>
+                <option value="2 Camas Sencillas">2 Camas Sencillas</option>
+                <option value="1 Cama Doble">1 Cama Doble</option>
+                <option value="2 Camas Dobles">2 Camas Dobles</option>
+                <option value="1 Cama Semidoble">1 Cama Semidoble</option>
+                <option value="2 Camas Semidobles">2 Camas Semidobles</option>
+            </select><br>
 
-            <label for="descripcion">Descripción:</label><br>
-            <textarea id="descripcion" name="descripcion" placeholder="Ej: Wi-Fi, TV, Baño privado" required></textarea><br><br>
+            <label>Descripción:</label><br>
+            <div id="servicios-container" class="checkbox-group">
+                <label><input type="checkbox" name="servicios" value="TV"> TV</label>
+                <label><input type="checkbox" name="servicios" value="Un baño"> Un baño</label>
+                <label><input type="checkbox" name="servicios" value="Dos baños"> Dos baños</label>
+                <label><input type="checkbox" name="servicios" value="Jacuzzi"> Jacuzzi</label>
+                <label><input type="checkbox" name="servicios" value="WI-FI"> WI-FI</label>
+            </div>
+            <br>
 
             <label for="precio">Precio por Noche:</label><br>
             <input type="number" id="precio" name="precio" placeholder="Ej: 150000" required><br>            
 
-            <input type="submit" value="Añadir Habitación">
+            <input type="submit" value="Actualizar Habitación">
         </form>
     </main>
     
