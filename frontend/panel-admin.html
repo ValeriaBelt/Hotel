@@ -26,21 +26,26 @@
 
     <main style="padding: 40px;">
         <h2 id="welcome-message">¡Bienvenido!</h2>
-        <p>Desde aquí podrás gestionar las habitaciones del hotel.</p>
+        <p>Desde aquí podrás actualizar la información de las habitaciones.</p>
+        
+        <hr style="margin: 20px 0;">
+        
+        <h3>Actualizar Información de Habitación</h3>
+        <div id="update-message" style="margin-top: 15px;"></div>
 
-        <hr style="margin: 40px 0;">
+        <form id="form-update-habitacion" class="admin" style="margin-top: 20px;">
+            <label for="select-habitacion-update">Seleccionar Habitación:</label><br>
+            <select id="select-habitacion-update" name="select-habitacion-update">
+                <option value="">-- Seleccione una habitación --</option>
+                <!-- Opciones de habitaciones se cargarán aquí dinámicamente -->
+            </select><br><br>
 
-        <h3>Modificar Habitación</h3>
-        <form id="form-edit-habitacion" class="admin" style="margin-top: 20px;">
-            <div id="edit-message"></div> 
-            <label for="habitacion-select">Selecciona una Habitación:</label></br>
-            <select id="habitacion-select" name="habitacion-select" required>
-                <option value="">-- Elige una habitación --</option>
-            </select><br>
+            <label for="update-numero">Número de Habitación:</label><br>
+            <input type="number" id="update-numero" name="update-numero" placeholder="Ej: 101, 202" disabled><br>
 
-            <label for="tipo">Tipo de Habitación:</label><br>
-            <select id="tipo" name="tipo" required>
-                <option value="">-- Selecciona un tipo --</option>
+            <label for="update-tipo">Tipo de Habitación:</label><br>
+            <select id="update-tipo" name="update-tipo">
+                <option value="">-- Seleccione un tipo --</option>
                 <option value="1 Cama Sencilla">1 Cama Sencilla</option>
                 <option value="2 Camas Sencillas">2 Camas Sencillas</option>
                 <option value="1 Cama Doble">1 Cama Doble</option>
@@ -49,23 +54,24 @@
                 <option value="2 Camas Semidobles">2 Camas Semidobles</option>
             </select><br>
 
-            <label>Descripción:</label><br>
-            <div id="servicios-container" class="checkbox-group">
+            <label for="update-descripcion">Descripción:</label><br>
+            <div id="update-servicios-container" class="checkbox-group">
                 <label><input type="checkbox" name="servicios" value="TV"> TV</label>
+                <label><input type="checkbox" name="servicios" value="Wi-Fi"> Wi-Fi</label>
                 <label><input type="checkbox" name="servicios" value="Un baño"> Un baño</label>
                 <label><input type="checkbox" name="servicios" value="Dos baños"> Dos baños</label>
                 <label><input type="checkbox" name="servicios" value="Jacuzzi"> Jacuzzi</label>
-                <label><input type="checkbox" name="servicios" value="WI-FI"> WI-FI</label>
+                <label><input type="checkbox" name="servicios" value="Aire Acondicionado"> Aire Acondicionado</label>
             </div>
             <br>
 
-            <label for="precio">Precio por Noche:</label><br>
-            <input type="number" id="precio" name="precio" placeholder="Ej: 150000" required><br>            
+            <label for="update-precio">Precio por Noche:</label><br>
+            <input type="number" id="update-precio" name="update-precio" placeholder="Ej: 150000"><br>
 
+            <input type="hidden" id="update-id-habitacion" name="update-id-habitacion">
             <input type="submit" value="Actualizar Habitación">
         </form>
     </main>
-    
     <footer>
         <p>© 2025 HotelSys. Todos los derechos reservados.</p>
     </footer>

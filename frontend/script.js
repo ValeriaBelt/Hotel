@@ -29,13 +29,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (response.ok) {
                             const data = await response.json(); // Obtenemos los datos como JSON
                             // Creamos el HTML a partir de los datos de la base de datos
-                            // Asegúrate que los nombres (data.Tipo, data.Precio, etc.) coincidan con tus columnas en la BD
                             detalles.innerHTML = `
-                                <h4>Detalles de la ${data.Tipo || 'habitación'}:</h4>
+                                <h4>Detalles de la habitación:</h4>
                                 <ul>
-                                    <li>Precio: $${data.Precio || 'N/A'}/noche</li>
-                                    <li>Capacidad: ${data.Capacidad || 'N/A'} personas</li>
-                                    <li>Servicios: ${data.Servicios || 'N/A'}</li>
+                                    <li><b>Tipo:</b> ${data.Tipo || 'No especificado'}</li>
+                                    <li><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(data.PrecioPorNoche) || 'N/A'} por noche</li>
+                                    <li><b>Servicios:</b> ${data.Descripcion || 'No especificados'}</li>
                                 </ul>
                             `;
                         } else {

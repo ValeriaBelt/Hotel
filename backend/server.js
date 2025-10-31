@@ -9,7 +9,7 @@ app.use(express.json());
 
 
 const dbConfig = {
-    connectionString: 'Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\valeriat;Database=HotelSys;Trusted_Connection=yes;'
+    connectionString: 'Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\stiven;Database=HotelSys;Trusted_Connection=yes;'
 };
 
 
@@ -98,18 +98,31 @@ app.post('/api/habitaciones', async (req, res) => {
 app.put('/api/habitaciones/:id', async (req, res) => {
     const { id } = req.params;
     const { tipo, descripcion, precio } = req.body;
+    
+    let updateFields = [];
+    let request = pool.request().input('id', sql.Int, id);
 
-    if (!tipo || tipo.trim() === '' || precio === undefined || precio === null || precio === '') {
-        return res.status(400).json({ message: 'Todos los campos (tipo, descripción y precio) son obligatorios.' });
+    if (tipo !== undefined && tipo !== null && tipo.trim() !== '') {
+        updateFields.push('Tipo = @tipo');
+        request.input('tipo', sql.NVarChar, tipo);
+    }
+    if (descripcion !== undefined && descripcion !== null) { // Permite que la descripción sea una cadena vacía
+        updateFields.push('Descripcion = @descripcion');
+        request.input('descripcion', sql.NVarChar, descripcion);
+    }
+    if (precio !== undefined && precio !== null && precio !== '') {
+        updateFields.push('PrecioPorNoche = @precio');
+        request.input('precio', sql.Decimal(10, 2), precio);
     }
 
+    if (updateFields.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron campos para actualizar.' });
+    }
+
+    const query = `UPDATE Habitaciones SET ${updateFields.join(', ')} WHERE idHabitacion = @id`;
+
     try {
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .input('tipo', sql.NVarChar, tipo)
-            .input('descripcion', sql.NVarChar, descripcion)
-            .input('precio', sql.Decimal(10, 2), precio)
-            .query('UPDATE Habitaciones SET Tipo = @tipo, Descripcion = @descripcion, PrecioPorNoche = @precio WHERE idHabitacion = @id');
+        const result = await request.query(query);
 
         if (result.rowsAffected[0] > 0) {
             res.json({ message: 'Habitación actualizada correctamente.' });
