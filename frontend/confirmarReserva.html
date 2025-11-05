@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/jpeg" href="img/Logo.jpg">
+    <title>Confirmar Reserva - HotelSys</title>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/Logo.jpg" alt="HotelSys" class="logo">
+        </div>
+        <div class="titulo-subtitulo">
+            <h1>Confirmar Reserva</h1>
+            <h4 class="subtitulo">Estás a un paso de completar tu reserva</h4>
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="reservas.html">Volver a Búsqueda</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h2>Detalles de tu Reserva</h2>
+        <div id="detalle-reserva-container" class="reservas">
+            <!-- El contenido se cargará dinámicamente aquí -->
+            <p>Cargando detalles de la reserva...</p>
+        </div>
+
+        <hr style="margin: 20px 0;">
+
+        <h3>Ingresa tus Datos</h3>
+        <form id="form-confirmar-reserva" class="reservas">
+            <label for="nombre-cliente">Nombre Completo:</label><br>
+            <input type="text" id="nombre-cliente" name="nombre-cliente" required><br>
+            <label for="email-cliente">Correo Electrónico:</label><br>
+            <input type="email" id="email-cliente" name="email-cliente" required><br>
+            <label for="telefono">Teléfono:</label><br>
+            <input type="tel" id="telefono" name="telefono" required><br>
+            <button type="submit">Confirmar y Reservar</button>
+        </form>
+        <div id="mensaje-confirmacion" style="margin-top: 20px;"></div>
+    </main>
+
+    <footer>
+        <p>© 2025 HotelSys. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="confirmarReserva.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultadosDiv = document.getElementById('resultados-disponibilidad');
     const tipoHabitacionSelect = document.getElementById('tipo-habitacion');
 
-    // --- 1. Cargar los tipos de habitación en el filtro ---
+    
     const cargarTiposHabitacion = async () => {
         try {
             const response = await fetch('http://localhost:3000/api/habitaciones/tipos');
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- 2. Manejar la búsqueda de disponibilidad ---
+    
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Construir la URL con los parámetros de búsqueda
+
         const url = new URL('http://localhost:3000/api/habitaciones/disponibles');
         url.searchParams.append('llegada', fechaLlegada);
         url.searchParams.append('salida', fechaSalida);
@@ -48,14 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
             resultadosDiv.innerHTML = '<p style="text-align: center;">Buscando...</p>';
             const response = await fetch(url);
 
-            // Verificamos si la respuesta del servidor fue exitosa (status 200-299)
+            
             if (!response.ok) {
-                const errorData = await response.json(); // Intentamos leer el mensaje de error JSON del servidor
+                const errorData = await response.json(); 
                 throw new Error(errorData.message || `Error del servidor: ${response.status}`);
             }
 
             const habitaciones = await response.json();
-            mostrarResultados(habitaciones);
+            mostrarResultados(habitaciones, fechaLlegada, fechaSalida);
 
         } catch (error) {
             console.error('Error al buscar disponibilidad:', error);
@@ -63,14 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 3. Mostrar los resultados en la página ---
-    const mostrarResultados = (habitaciones) => {
+    
+    const mostrarResultados = (habitaciones, fechaLlegada, fechaSalida) => {
         if (habitaciones.length === 0) {
             resultadosDiv.innerHTML = '<p style="text-align: center;">No hay habitaciones disponibles para las fechas o el tipo seleccionado.</p>';
             return;
         }
 
-        resultadosDiv.innerHTML = ''; // Limpiar resultados anteriores
+        resultadosDiv.innerHTML = ''; 
 
         habitaciones.forEach(hab => {
             const habitacionHTML = `
@@ -82,7 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><b>Habitación N° ${hab.NumeroHabitacion}</b> - ${hab.Tipo}</p>
                         <p>${hab.Descripcion}</p>
                         <p><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)}/noche</p>
-                        <a href="#" class="btn-reservar">Reservar ahora</a>
+                        <a href="javascript:void(0)" class="btn-reservar"
+                        data-habitacion-id="${hab.idHabitacion}"
+                        data-fecha-llegada="${fechaLlegada}"
+                        data-fecha-salida="${fechaSalida}">Reservar ahora</a>
                     </div>
                 </div>
             `;
@@ -90,7 +93,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- Inicialización ---
+    // Event listener para los botones "Reservar ahora" usando delegación de eventos
+    resultadosDiv.addEventListener('click', (event) => {
+        if (event.target.classList.contains('btn-reservar')) {
+            event.preventDefault(); // Previene el comportamiento por defecto del enlace
+
+            const habitacionId = event.target.dataset.habitacionId;
+            const fechaLlegada = event.target.dataset.fechaLlegada;
+            const fechaSalida = event.target.dataset.fechaSalida;
+            window.location.href = `confirmarReserva.html?id=${habitacionId}&llegada=${fechaLlegada}&salida=${fechaSalida}`;
+        }
+    });
+
+    
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('fecha-llegada').setAttribute('min', today);
     document.getElementById('fecha-salida').setAttribute('min', today);

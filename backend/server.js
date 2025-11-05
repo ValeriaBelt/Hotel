@@ -186,6 +186,66 @@ const startServer = async () => {
             }
         });
 
+        app.post('/api/reservas', async (req, res) => {
+            const { idHabitacion, fechaLlegada, fechaSalida, nombre, email, telefono } = req.body;
+
+            if (!idHabitacion || !fechaLlegada || !fechaSalida || !nombre || !email || !telefono) {
+                return res.status(400).json({ message: 'Todos los campos son obligatorios para la reserva.' });
+            }
+
+            const transaction = new sql.Transaction(pool);
+            try {
+                await transaction.begin();
+                const request = new sql.Request(transaction);
+
+                // 1. Buscar si el cliente ya existe por su email
+                let clienteResult = await request.input('email', sql.NVarChar, email)
+                .query('SELECT idCliente FROM Clientes WHERE Email = @email');
+                
+                let idCliente;
+
+                if (clienteResult.recordset.length > 0) {
+                    // Si el cliente existe, usamos su ID
+                    idCliente = clienteResult.recordset[0].idCliente;
+                } else {
+                    // Si el cliente no existe, lo creamos y obtenemos su nuevo ID
+                    const insertClienteResult = await request.input('nombre', sql.NVarChar, nombre)
+                    .input('telefono', sql.NVarChar, telefono)
+                    .query('INSERT INTO Clientes (Nombre, Email, Telefono) OUTPUT INSERTED.idCliente VALUES (@nombre, @email, @telefono)');
+                    idCliente = insertClienteResult.recordset[0].idCliente;
+                }
+
+                // 2. Crear la reserva con el idCliente obtenido
+                const reservaRequest = new sql.Request(transaction); // Nuevo request para la inserción final
+                const resultReserva = await reservaRequest
+                    .input('idHabitacion', sql.Int, idHabitacion)
+                    .input('idCliente', sql.Int, idCliente)
+                    .input('fechaEntrada', sql.Date, fechaLlegada)
+                    .input('fechaSalida', sql.Date, fechaSalida)
+                    .query('INSERT INTO Reservas (idHabitacion, idCliente, FechaEntrada, FechaSalida) VALUES (@idHabitacion, @idCliente, @fechaEntrada, @fechaSalida)');
+
+                if (resultReserva.rowsAffected[0] > 0) {
+                    await transaction.commit();
+                    res.status(201).json({ message: 'Reserva creada exitosamente.' });
+                } else {
+                    throw new Error('No se pudo crear la reserva.');
+                }
+
+            } catch (err) {
+                console.error('Error en la transacción de reserva:', err.stack);
+                try {
+                    await transaction.rollback();
+                } catch (rollbackErr) {
+                    console.error('Error al hacer rollback de la transacción:', rollbackErr.stack);
+                }
+                // Verificar si es un error de clave única (cliente duplicado por email, aunque ya lo manejamos)
+                if (err.number === 2627 || err.number === 2601) {
+                    return res.status(409).json({ message: 'Error de conflicto. Posiblemente un dato duplicado.' });
+                }
+                res.status(500).json({ message: 'Error interno del servidor al crear la reserva.' });
+            }
+        });
+
         const port = 3000;
         app.listen(port, () => {
             console.log(`Servidor corriendo en http://localhost:${port}`);

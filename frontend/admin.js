@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('admin', JSON.stringify(data.admin));
 
             
-                window.location.href = 'panel-admin.html';
+                window.location.href = 'panelAdmin.html';
             } else {
                 messageDiv.textContent = data.message || 'Error al iniciar sesión.';
                 messageDiv.style.color = 'red';
