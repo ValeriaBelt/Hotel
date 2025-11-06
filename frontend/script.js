@@ -1,55 +1,46 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Seleccionamos TODOS los botones de detalles
-    const botonesDetalles = document.querySelectorAll('.btn-detalles');
+    // --- Lógica del Carrusel ---
+    const slidesContainer = document.querySelector('.carousel-slides');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const prevButton = document.querySelector('.carousel-prev');
+    const nextButton = document.querySelector('.carousel-next');
 
-    // Recorremos cada botón para agregarle el evento de clic
-    botonesDetalles.forEach(function(boton) {
-        boton.addEventListener('click', async function() {
-            // 'this' se refiere al botón que fue presionado
-            // Buscamos el contenedor de detalles dentro del mismo padre '.descripcion'
-            const detalles = this.parentElement.querySelector('.detalles-habitacion');
-            const habitacionId = this.dataset.habitacionId;
+    if (slidesContainer && slides.length > 0) {
+        let currentIndex = 0;
+        const totalSlides = slides.length;
 
-            // Verificamos si los detalles ya están visibles
-            const isVisible = detalles.style.maxHeight && detalles.style.maxHeight !== "0px";
+        function updateCarousel() {
+            slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+        }
 
-            if (isVisible) {
-                // Si ya está visible, simplemente lo ocultamos
-                detalles.style.maxHeight = "0px";
-                detalles.style.padding = "0 15px";
-                this.textContent = 'Ver más detalles';
-            } else {
-                // Si está oculto, verificamos si ya tiene contenido
-                if (detalles.innerHTML.trim() === '') {
-                    // Si está vacío, vamos a buscar el contenido
-                    try {
-                        // CAMBIO: Apuntamos a nuestro nuevo backend
-                        const response = await fetch(`http://localhost:3000/api/habitaciones/${habitacionId}`);
-                        
-                        if (response.ok) {
-                            const data = await response.json(); // Obtenemos los datos como JSON
-                            // Creamos el HTML a partir de los datos de la base de datos
-                            detalles.innerHTML = `
-                                <h4>Detalles de la habitación:</h4>
-                                <ul>
-                                    <li><b>Tipo:</b> ${data.Tipo || 'No especificado'}</li>
-                                    <li><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(data.PrecioPorNoche) || 'N/A'} por noche</li>
-                                    <li><b>Servicios:</b> ${data.Descripcion || 'No especificados'}</li>
-                                </ul>
-                            `;
-                        } else {
-                            detalles.innerHTML = '<p>Detalles no disponibles en este momento.</p>';
-                        }
-                    } catch (error) {
-                        console.error('Error al cargar los detalles:', error);
-                        detalles.innerHTML = '<p>No se pudo cargar la información.</p>';
-                    }
-                }
-                // Mostramos el contenedor (ya sea con contenido nuevo o existente)
-                detalles.style.maxHeight = detalles.scrollHeight + "px";
-                detalles.style.padding = "15px";
-                this.textContent = 'Ocultar detalles';
-            }
-        });
-    });
+        function showNextSlide() {
+            currentIndex = (currentIndex + 1) % totalSlides;
+            updateCarousel();
+        }
+
+        function showPrevSlide() {
+            currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+            updateCarousel();
+        }
+
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                showNextSlide();
+                // Reinicia el intervalo automático al hacer clic manual
+                clearInterval(autoSlideInterval);
+                autoSlideInterval = setInterval(showNextSlide, 5000);
+            });
+        }
+
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                showPrevSlide();
+                clearInterval(autoSlideInterval);
+                autoSlideInterval = setInterval(showNextSlide, 5000);
+            });
+        }
+
+        // Avance automático cada 5 segundos
+        let autoSlideInterval = setInterval(showNextSlide, 5000);
+    }
 });
