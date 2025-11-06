@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/jpeg" href="img/Logo.jpg">
+    <title>Reservas Cliente - HotelSys</title>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="img/Logo.jpg" alt="HotelSys" class="logo">
+        </div>
+        <div class="titulo-subtitulo">
+            <h1>Mis Reservas</h1>     
+            <h4 class="subtitulo">Consulte o cancele sus reservas</h4>
+        </div>
+        <nav class="menu">
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="reservas.html">Nueva Reserva</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main style="padding: 40px;">
+        <h3>Busca tus Reservas</h3>
+        <p>Ingresa el correo electrónico o el número de teléfono que usaste al reservar.</p>
+        <div id="gestion-message" style="margin-top: 15px;"></div>
+
+        <form id="form-buscar-reservas-cliente" class="admin" style="margin-top: 20px;">
+            <label for="termino-busqueda">Correo o Teléfono:</label><br>
+            <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required><br>
+            <button type="submit">Buscar mis Reservas</button>
+        </form>
+
+        <div id="resultados-reservas-cliente" style="margin-top: 20px; overflow-x: auto;"></div>
+    </main>
+    <footer>
+        <p>© 2025 HotelSys. Todos los derechos reservados.</p>
+    </footer>
+
+    <script src="ReservasCliente.js"></script>
+</body>
+</html>

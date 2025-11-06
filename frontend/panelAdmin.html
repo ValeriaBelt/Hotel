@@ -120,6 +120,25 @@
             </div>
         </div>
 
+        <hr style="margin: 40px 0;">
+
+        <h3>Gestionar Reservas</h3>
+        <p>Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
+        <div id="gestion-message" style="margin-top: 15px;"></div>
+
+        <form id="form-buscar-reservas" class="admin" style="margin-top: 20px;">
+            <div>
+                <label for="termino-busqueda">Buscar por Correo o Teléfono:</label><br>
+                <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required>
+            </div>
+            <button type="submit">Buscar Reservas</button>
+        </form>
+
+        <div id="resultados-reservas-admin" style="margin-top: 20px; overflow-x: auto;">
+            <!-- La tabla con las reservas aparecerá aquí -->
+        </div>
+
+
     </main>
     <footer>
         <p>© 2025 HotelSys. Todos los derechos reservados.</p>

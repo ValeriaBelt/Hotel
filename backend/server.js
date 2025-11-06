@@ -246,6 +246,50 @@ const startServer = async () => {
             }
         });
 
+        // Endpoint para buscar reservas por email o teléfono del cliente
+        app.get('/api/reservas/buscar', async (req, res) => {
+            const { termino } = req.query;
+        
+            if (!termino) {
+                return res.status(400).json({ message: 'Se requiere un término de búsqueda (email o teléfono).' });
+            }
+        
+            try {
+                const request = pool.request();
+                const result = await request.input('termino', sql.NVarChar, `%${termino}%`)
+                    .query(`
+                        SELECT 
+                            r.idReserva, r.FechaEntrada, r.FechaSalida,
+                            h.NumeroHabitacion, h.Tipo,
+                            c.Nombre, c.Email, c.Telefono
+                        FROM Reservas r
+                        JOIN Habitaciones h ON r.idHabitacion = h.idHabitacion
+                        JOIN Clientes c ON r.idCliente = c.idCliente
+                        WHERE c.Email LIKE @termino OR c.Telefono LIKE @termino
+                        ORDER BY r.FechaEntrada DESC
+                    `);
+                
+                res.json(result.recordset);
+        
+            } catch (err) {
+                console.error('Error al buscar reservas:', err.stack);
+                res.status(500).json({ message: 'Error interno del servidor al buscar reservas.' });
+            }
+        });
+
+        // Endpoint para cancelar (eliminar) una reserva
+        app.delete('/api/reservas/:id', async (req, res) => {
+            const { id } = req.params;
+            try {
+                const result = await pool.request().input('id', sql.Int, id).query('DELETE FROM Reservas WHERE idReserva = @id');
+                if (result.rowsAffected[0] > 0) res.json({ message: 'Reserva cancelada exitosamente.' });
+                else res.status(404).json({ message: 'No se encontró la reserva para cancelar.' });
+            } catch (err) {
+                console.error('Error al cancelar la reserva:', err.stack);
+                res.status(500).json({ message: 'Error interno del servidor.' });
+            }
+        });
+
         const port = 3000;
         app.listen(port, () => {
             console.log(`Servidor corriendo en http://localhost:${port}`);

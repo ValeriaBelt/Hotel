@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Opcional: cerrar modal y refrescar búsqueda después de un tiempo
                 setTimeout(() => {
                     modal.style.display = 'none';
+                    formBuscarDisponibilidad.reset(); // Limpiamos el formulario de búsqueda de disponibilidad
                     formBuscarDisponibilidad.dispatchEvent(new Event('submit')); // Refresca la búsqueda
                 }, 2000);
             } else {
@@ -181,4 +182,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cargar todo lo necesario al iniciar
     cargarTiposHabitacion();
+
+    // --- Funcionalidad para Gestionar (Cancelar) Reservas ---
+
+    const formBuscarReservas = document.getElementById('form-buscar-reservas');
+    const gestionMessageDiv = document.getElementById('gestion-message');
+    const resultadosReservasContainer = document.getElementById('resultados-reservas-admin');
+
+    formBuscarReservas.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const termino = document.getElementById('termino-busqueda').value;
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/reservas/buscar?termino=${encodeURIComponent(termino)}`);
+            const reservas = await response.json();
+
+            gestionMessageDiv.textContent = '';
+            resultadosReservasContainer.innerHTML = '';
+
+            if (reservas.length === 0) {
+                resultadosReservasContainer.innerHTML = '<p>No se encontraron reservas para el término de búsqueda proporcionado.</p>';
+                return;
+            }
+
+            const tabla = document.createElement('table');
+            tabla.className = 'tabla-reservas';
+            tabla.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Habitación</th>
+                        <th>Llegada</th>
+                        <th>Salida</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reservas.map(res => `
+                        <tr data-id-reserva="${res.idReserva}">
+                            <td>${res.Nombre}</td>
+                            <td>${res.Email}</td>
+                            <td>${res.Telefono}</td>
+                            <td>N° ${res.NumeroHabitacion} (${res.Tipo})</td>
+                            <td>${new Date(res.FechaEntrada).toLocaleDateString()}</td>
+                            <td>${new Date(res.FechaSalida).toLocaleDateString()}</td>
+                            <td><button class="btn-cancelar" data-id="${res.idReserva}">Cancelar</button></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            resultadosReservasContainer.appendChild(tabla);
+
+            // Limpiamos el formulario de búsqueda de reservas
+            formBuscarReservas.reset();
+
+        } catch (error) {
+            console.error('Error al buscar reservas:', error);
+            gestionMessageDiv.textContent = 'Error al conectar con el servidor para buscar reservas.';
+            gestionMessageDiv.style.color = 'red';
+        }
+    });
+
+    // Event listener para los botones de cancelar (usando delegación de eventos)
+    resultadosReservasContainer.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('btn-cancelar')) {
+            const idReserva = event.target.dataset.id;
+            
+            if (confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/reservas/${idReserva}`, {
+                        method: 'DELETE'
+                    });
+                    const resultado = await response.json();
+
+                    if (response.ok) {
+                        gestionMessageDiv.textContent = resultado.message;
+                        gestionMessageDiv.style.color = 'green';
+                        // Eliminar la fila de la tabla
+                        event.target.closest('tr').remove();
+                    } else {
+                        gestionMessageDiv.textContent = `Error: ${resultado.message}`;
+                        gestionMessageDiv.style.color = 'red';
+                    }
+                } catch (error) {
+                    console.error('Error al cancelar reserva:', error);
+                    gestionMessageDiv.textContent = 'Error de conexión al intentar cancelar la reserva.';
+                    gestionMessageDiv.style.color = 'red';
+                }
+            }
+        }
+    });
 });
