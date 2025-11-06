@@ -71,12 +71,61 @@
             <input type="hidden" id="update-id-habitacion" name="update-id-habitacion">
             <input type="submit" value="Actualizar Habitación">
         </form>
+
+        <hr style="margin: 40px 0;">
+
+        <h3>Crear una Nueva Reserva</h3>
+        <div id="reserva-message" style="margin-top: 15px;"></div>
+
+        <form id="form-buscar-disponibilidad-admin" class="admin" style="margin-top: 20px;">
+            <div>
+                <label for="fecha-llegada">Fecha de Llegada:</label><br>
+                <input type="date" id="fecha-llegada" name="fecha-llegada" required>
+            </div>
+            <div>
+                <label for="fecha-salida">Fecha de Salida:</label><br>
+                <input type="date" id="fecha-salida" name="fecha-salida" required>
+            </div>
+            <div>
+                <label for="tipo-habitacion-admin">Tipo de Habitación:</label><br>
+                <select id="tipo-habitacion-admin" name="tipo">
+                    <option value="">Todos los tipos</option>
+                </select>
+            </div>
+            <button type="submit">Buscar Disponibilidad</button>
+        </form>
+
+        <div id="resultados-disponibilidad-admin" class="galeria" style="margin-top: 20px;">
+            <!-- Los resultados de la búsqueda aparecerán aquí -->
+        </div>
+
+        <!-- Modal para confirmar reserva -->
+        <div id="modal-reserva" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>Confirmar Reserva</h2>
+                <div id="detalle-reserva-modal"></div>
+                <hr>
+                <h3>Datos del Cliente</h3>
+                <form id="form-confirmar-reserva-admin">
+                    <label for="nombre-cliente">Nombre Completo:</label><br>
+                    <input type="text" id="nombre-cliente" name="nombre-cliente" required><br>
+                    <label for="email-cliente">Correo Electrónico:</label><br>
+                    <input type="email" id="email-cliente" name="email-cliente" required><br>
+                    <label for="telefono">Teléfono:</label><br>
+                    <input type="tel" id="telefono" name="telefono" required><br>
+                    <button type="submit">Confirmar y Reservar</button>
+                </form>
+                <div id="mensaje-confirmacion-modal" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+
     </main>
     <footer>
         <p>© 2025 HotelSys. Todos los derechos reservados.</p>
     </footer>
 
-    <script src="panelAdmin.js"></script>
+    <script src="panel-admin.js"></script>
     <script src="gestionHabitaciones.js"></script> 
 </body>
 </html>
