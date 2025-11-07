@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.querySelector('form.admin');
+    const loginForm = document.getElementById('form-login-admin');
     const messageDiv = document.createElement('div');
     loginForm.prepend(messageDiv); 
 

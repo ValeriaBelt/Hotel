@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const emailCliente = document.getElementById('email-cliente').value;
         const telefonoCliente = document.getElementById('telefono').value;
 
+        // Validar que el teléfono solo contenga 10 números
+        const telefonoRegex = /^\d{10}$/;
+        if (!telefonoRegex.test(telefonoCliente)) {
+            mensajeConfirmacion.innerHTML = '<p style="color: red;">El teléfono debe contener exactamente 10 dígitos numéricos.</p>';
+            return;
+        }
+
         const datosReserva = {
             idHabitacion: idHabitacion,
             fechaLlegada: fechaLlegada,

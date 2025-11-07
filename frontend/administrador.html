@@ -23,21 +23,26 @@
             </ul>
         </nav>
     </header>
-
-    <form class="admin">
-        <label for="correo">Correo:</label><br>
-        <input type="email" id="correo" name="correo" placeholder="Correo electrónico" required><br>
-        <label for="contrasena">Contraseña:</label><br>
-        <input type="password" id="contrasena" name="contrasena" placeholder="Ingresa tu contraseña" required autocomplete="current-password"><br><br>
-        <input type="submit" value="Iniciar Sesión">
-    </form>
+    
+    <main>
+        <h2>Ingresa tus Datos</h2>
+        <form id="form-login-admin" class="reservas" style="margin-top: 5vh;">
+            <label for="correo">Correo:</label><br>
+            <input type="email" id="correo" name="correo" placeholder="Correo electrónico" required><br>
+            <label for="contrasena">Contraseña:</label><br>
+            <input type="password" id="contrasena" name="contrasena" placeholder="Ingresa tu contraseña" required autocomplete="current-password"><br><br>
+            <div class="form-submit-container">
+                <button type="submit">Iniciar Sesión</button>
+            </div>
+        </form>
+    </main>
 
     <footer id="contacto" class="bg-dark-text text-white py-12 md:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10 border-b border-gray-700 pb-8">
                 <!-- Columna 1: Logo y Contacto -->
                 <div>
-                    <span class="text-2xl font-extrabold text-white mb-4 block">HotelSys</span>
+                    <span class="text-2xl font-extrabold text-primary-blue mb-4 block">HotelSys</span>
                     <p class="text-sm text-gray-400 mb-3">Dirección: Calle 8a #24-26, Ibague-Tolima, Colombia</p>
                     <p class="text-sm text-gray-400 mb-3">Teléfono: +57 3157946002</p>
                     <p class="text-sm text-gray-400">Email: informacion@hotelsys.com</p>

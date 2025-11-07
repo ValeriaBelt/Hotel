@@ -29,10 +29,12 @@
         <p>Ingresa el correo electrónico o el número de teléfono que usaste al reservar.</p>
         <div id="gestion-message" style="margin-top: 15px;"></div>
 
-        <form id="form-buscar-reservas-cliente" class="admin" style="margin-top: 20px;">
+        <form id="form-buscar-reservas-cliente" class="reservas" style="margin-top: 20px;">
             <label for="termino-busqueda">Correo o Teléfono:</label><br>
             <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required><br>
-            <button type="submit">Buscar mis Reservas</button>
+            <div class="form-submit-container">
+                <button type="submit">Buscar mis Reservas</button>
+            </div>
         </form>
 
         <div id="resultados-reservas-cliente" style="margin-top: 20px; overflow-x: auto;"></div>
@@ -42,7 +44,7 @@
             <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10 border-b border-gray-700 pb-8">
                 <!-- Columna 1: Logo y Contacto -->
                 <div>
-                    <span class="text-2xl font-extrabold text-white mb-4 block">HotelSys</span>
+                    <span class="text-2xl font-extrabold text-primary-blue mb-4 block">HotelSys</span>
                     <p class="text-sm text-gray-400 mb-3">Dirección: Calle 8a #24-26, Ibague-Tolima, Colombia</p>
                     <p class="text-sm text-gray-400 mb-3">Teléfono: +57 3157946002</p>
                     <p class="text-sm text-gray-400">Email: informacion@hotelsys.com</p>

@@ -26,14 +26,13 @@
 
     <main style="padding: 40px;">
         <h2 id="welcome-message">¡Bienvenido!</h2>
-        <p>Desde aquí podrás actualizar la información de las habitaciones.</p>
-        
+                
         <hr style="margin: 20px 0;">
         
         <h3>Actualizar Información de Habitación</h3>
         <div id="update-message" style="margin-top: 15px;"></div>
 
-        <form id="form-update-habitacion" class="admin" style="margin-top: 20px;">
+        <form id="form-update-habitacion" class="reservas" style="margin-top: 20px;">
             <label for="select-habitacion-update">Seleccionar Habitación:</label><br>
             <select id="select-habitacion-update" name="select-habitacion-update">
                 <option value="">-- Seleccione una habitación --</option>
@@ -69,7 +68,9 @@
             <input type="number" id="update-precio" name="update-precio" placeholder="Ej: 150000"><br>
 
             <input type="hidden" id="update-id-habitacion" name="update-id-habitacion">
-            <input type="submit" value="Actualizar Habitación">
+            <div class="form-submit-container">
+                <input type="submit" value="Actualizar Habitación">
+            </div>
         </form>
 
         <hr style="margin: 40px 0;">
@@ -77,7 +78,7 @@
         <h3>Crear una Nueva Reserva</h3>
         <div id="reserva-message" style="margin-top: 15px;"></div>
 
-        <form id="form-buscar-disponibilidad-admin" class="admin" style="margin-top: 20px;">
+        <form id="form-buscar-disponibilidad-admin" class="reservas" style="margin-top: 20px;">
             <div>
                 <label for="fecha-llegada">Fecha de Llegada:</label><br>
                 <input type="date" id="fecha-llegada" name="fecha-llegada" required>
@@ -92,7 +93,9 @@
                     <option value="">Todos los tipos</option>
                 </select>
             </div>
-            <button type="submit">Buscar Disponibilidad</button>
+            <div class="form-submit-container">
+                <button type="submit">Buscar Disponibilidad</button>
+            </div>
         </form>
 
         <div id="resultados-disponibilidad-admin" class="galeria" style="margin-top: 20px;">
@@ -114,7 +117,9 @@
                     <input type="email" id="email-cliente" name="email-cliente" required><br>
                     <label for="telefono">Teléfono:</label><br>
                     <input type="tel" id="telefono" name="telefono" required><br>
-                    <button type="submit">Confirmar y Reservar</button>
+                    <div class="form-submit-container">
+                        <button type="submit">Confirmar y Reservar</button>
+                    </div>
                 </form>
                 <div id="mensaje-confirmacion-modal" style="margin-top: 15px;"></div>
             </div>
@@ -123,21 +128,67 @@
         <hr style="margin: 40px 0;">
 
         <h3>Gestionar Reservas</h3>
-        <p>Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
+        <p class="text-center">Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
         <div id="gestion-message" style="margin-top: 15px;"></div>
 
-        <form id="form-buscar-reservas" class="admin" style="margin-top: 20px;">
+        <form id="form-buscar-reservas" class="reservas" style="margin-top: 20px;">
             <div>
                 <label for="termino-busqueda">Buscar por Correo o Teléfono:</label><br>
                 <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required>
             </div>
-            <button type="submit">Buscar Reservas</button>
+            <div class="form-submit-container">
+                <button type="submit">Buscar Reservas</button>
+            </div>
         </form>
 
         <div id="resultados-reservas-admin" style="margin-top: 20px; overflow-x: auto;">
             <!-- La tabla con las reservas aparecerá aquí -->
         </div>
 
+        <hr style="margin: 40px 0;">
+
+        <h3>Crear Nuevo Administrador</h3>
+        <div id="admin-message" style="margin-top: 15px;"></div>
+
+        <form id="form-crear-admin" class="reservas" style="margin-top: 20px;">
+            <div>
+                <label for="nombre-admin">Nombre Completo:</label><br>
+                <input type="text" id="nombre-admin" name="nombre-admin" required>
+            </div>
+            <div>
+                <label for="telefono-admin">Teléfono:</label><br>
+                <input type="tel" id="telefono-admin" name="telefono-admin" required>
+            </div>
+            <div>
+                <label for="correo-admin">Correo Electrónico:</label><br>
+                <input type="email" id="correo-admin" name="correo-admin" required>
+            </div>
+            <div>
+                <label for="clave-admin">Contraseña:</label><br>
+                <input type="password" id="clave-admin" name="clave-admin" required>
+            </div>
+            <div class="form-submit-container">
+                <button type="submit">Crear Administrador</button>
+            </div>
+        </form>
+
+        <hr style="margin: 40px 0;">
+
+        <section id="eliminar-administrador">
+            <h3>Eliminar Administrador</h3>
+            <div id="admin-eliminar-message" style="margin-top: 15px;"></div>
+            <form id="form-eliminar-admin" class="reservas" style="margin-top: 20px;">
+                <div>
+                    <label for="select-admin-eliminar">Seleccionar Administrador a Eliminar:</label><br>
+                    <select id="select-admin-eliminar" required>
+                        <option value="">-- Cargando administradores... --</option>
+                    </select>
+                </div>
+                <div class="form-submit-container">
+                    <button type="submit">Eliminar Administrador</button>
+                </div>
+            </form>
+        </section>
 
     </main>
     <footer id="contacto" class="bg-dark-text text-white py-12 md:py-16">
@@ -145,7 +196,7 @@
             <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10 border-b border-gray-700 pb-8">
                 <!-- Columna 1: Logo y Contacto -->
                 <div>
-                    <span class="text-2xl font-extrabold text-white mb-4 block">HotelSys</span>
+                    <span class="text-2xl font-extrabold text-primary-blue mb-4 block">HotelSys</span>
                     <p class="text-sm text-gray-400 mb-3">Dirección: Calle 8a #24-26, Ibague-Tolima, Colombia</p>
                     <p class="text-sm text-gray-400 mb-3">Teléfono: +57 3157946002</p>
                     <p class="text-sm text-gray-400">Email: informacion@hotelsys.com</p>

@@ -290,6 +290,69 @@ const startServer = async () => {
             }
         });
 
+        // Endpoint para registrar un nuevo administrador
+        app.post('/api/admin/register', async (req, res) => {
+            const { nombre, telefono, correo, clave } = req.body;
+
+            if (!nombre || !telefono || !correo || !clave) {
+                return res.status(400).json({ message: 'Todos los campos son obligatorios: nombre, teléfono, correo y clave.' });
+            }
+
+            try {
+                const request = pool.request();
+                const result = await request
+                    .input('nombre', sql.NVarChar, nombre)
+                    .input('telefono', sql.NVarChar, telefono)
+                    .input('correo', sql.NVarChar, correo)
+                    .input('clave', sql.NVarChar, clave) // Recuerda usar hashing en un proyecto real
+                    .query('INSERT INTO Administrador (Nombre, Telefono, Correo, Clave) VALUES (@nombre, @telefono, @correo, @clave)');
+
+                if (result.rowsAffected[0] > 0) {
+                    res.status(201).json({ message: 'Administrador creado exitosamente.' });
+                } else {
+                    throw new Error('No se pudo crear el administrador.');
+                }
+            } catch (err) {
+                console.error('Error al registrar administrador:', err.stack);
+                if (err.number === 2627) { // Error de violación de clave única (correo duplicado)
+                    return res.status(409).json({ message: 'El correo electrónico ya está registrado.' });
+                }
+                res.status(500).json({ message: 'Error interno del servidor al registrar el administrador.' });
+            }
+        });
+
+        // Endpoint para obtener todos los administradores
+        app.get('/api/admin/all', async (req, res) => {
+            try {
+                const result = await pool.request().query('SELECT idAdministrador, Nombre, Correo FROM Administrador');
+                res.json(result.recordset);
+            } catch (err) {
+                console.error('Error al obtener todos los administradores:', err.stack);
+                res.status(500).json({ message: 'Error interno del servidor.' });
+            }
+        });
+
+        // Endpoint para eliminar un administrador
+        app.delete('/api/admin/:id', async (req, res) => {
+            const { id } = req.params;
+
+            try {
+                const result = await pool.request()
+                    .input('id', sql.Int, id)
+                    .query('DELETE FROM Administrador WHERE idAdministrador = @id');
+
+                if (result.rowsAffected[0] > 0) {
+                    res.json({ message: 'Administrador eliminado exitosamente.' });
+                } else {
+                    res.status(404).json({ message: 'No se encontró el administrador para eliminar.' });
+                }
+            } catch (err) {
+                console.error('Error al eliminar administrador:', err.stack);
+                res.status(500).json({ message: 'Error interno del servidor.' });
+            }
+        });
+
+
         const port = 3000;
         app.listen(port, () => {
             console.log(`Servidor corriendo en http://localhost:${port}`);

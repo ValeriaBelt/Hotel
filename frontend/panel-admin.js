@@ -151,6 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
             telefono: document.getElementById('telefono').value,
         };
 
+        // Validar que el teléfono solo contenga 10 números
+        const telefonoRegex = /^\d{10}$/;
+        if (!telefonoRegex.test(datosCliente.telefono)) {
+            mensajeConfirmacionModal.innerHTML = '<p style="color: red;">El teléfono debe contener exactamente 10 dígitos numéricos.</p>';
+            return;
+        }
+
         const payload = { ...datosReservaActual, ...datosCliente };
 
         try {
@@ -274,4 +281,141 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // --- Funcionalidad para Crear Administradores ---
+
+    const formCrearAdmin = document.getElementById('form-crear-admin');
+    const adminMessageDiv = document.getElementById('admin-message');
+
+
+    if (formCrearAdmin) {
+        formCrearAdmin.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const nombre = document.getElementById('nombre-admin').value;
+            const telefono = document.getElementById('telefono-admin').value;
+            const correo = document.getElementById('correo-admin').value;
+            const clave = document.getElementById('clave-admin').value;
+
+            if (!nombre || !telefono || !correo || !clave) {
+                adminMessageDiv.textContent = 'Todos los campos son obligatorios.';
+                adminMessageDiv.style.color = 'red';
+                return;
+            }
+
+            // Validar la fortaleza de la contraseña
+            const claveRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!claveRegex.test(clave)) {
+                adminMessageDiv.textContent = `La contraseña debe tener al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un número y un carácter especial.`;
+                adminMessageDiv.style.color = 'red';
+                return;
+            }
+
+            // Validar que el teléfono solo contenga números
+            const telefonoRegex = /^\d{10}$/;
+            if (!telefonoRegex.test(telefono)) {
+                adminMessageDiv.textContent = 'El teléfono debe contener exactamente 10 dígitos numéricos.';
+                adminMessageDiv.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, telefono, correo, clave }),
+                });
+
+                const resultado = await response.json();
+
+                adminMessageDiv.textContent = resultado.message;
+                adminMessageDiv.style.color = response.ok ? 'green' : 'red';
+
+                if (response.ok) {
+                    formCrearAdmin.reset();
+                }
+            } catch (error) {
+                console.error('Error al crear administrador:', error);
+                adminMessageDiv.textContent = 'No se pudo conectar con el servidor para crear el administrador.';
+                adminMessageDiv.style.color = 'red';
+            }
+        });
+    }    
+
+    // --- Funcionalidad para Eliminar Administradores ---
+
+    const formEliminarAdmin = document.getElementById('form-eliminar-admin');
+    const adminEliminarMessageDiv = document.getElementById('admin-eliminar-message');
+    const selectAdminEliminar = document.getElementById('select-admin-eliminar');
+
+    // Función para cargar todos los administradores en el select
+    const cargarAdministradoresParaEliminar = async () => {
+        try {
+            const response = await fetch('http://localhost:3000/api/admin/all');
+            if (!response.ok) {
+                console.error('No se pudieron cargar los administradores para eliminar.');
+                return;
+            }
+            const administradores = await response.json();
+
+            // Limpiar y añadir opción por defecto
+            selectAdminEliminar.innerHTML = '<option value="">-- Seleccione un administrador --</option>';
+
+            administradores.forEach(admin => {
+                const option = document.createElement('option');
+                option.value = admin.idAdministrador;
+                option.textContent = `${admin.Nombre} (${admin.Correo})`;
+                selectAdminEliminar.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error de conexión al cargar administradores para eliminar:', error);
+            adminEliminarMessageDiv.textContent = 'Error al cargar administradores.';
+            adminEliminarMessageDiv.style.color = 'red';
+        }
+    };
+
+    // Event listener para el envío del formulario de eliminación
+    if (formEliminarAdmin) {
+        formEliminarAdmin.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const idAdministrador = document.getElementById('select-admin-eliminar').value;
+
+            if (!idAdministrador) {
+                adminEliminarMessageDiv.textContent = 'Por favor, seleccione un administrador para eliminar.';
+                adminEliminarMessageDiv.style.color = 'red';
+                return;
+            }
+
+            if (confirm('¿Estás seguro de que deseas eliminar este administrador? Esta acción no se puede deshacer.')) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/admin/${idAdministrador}`, {
+                        method: 'DELETE'
+                    });
+
+                    const resultado = await response.json();
+
+                    if (response.ok) {
+                        adminEliminarMessageDiv.textContent = resultado.message;
+                        adminEliminarMessageDiv.style.color = 'green';
+
+                        // Recargar la lista de administradores
+                        cargarAdministradoresParaEliminar();
+                    } else {
+                        adminEliminarMessageDiv.textContent = `Error: ${resultado.message}`;
+                        adminEliminarMessageDiv.style.color = 'red';
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar administrador:', error);
+                    adminEliminarMessageDiv.textContent = 'Error de conexión al intentar eliminar el administrador.';
+                    adminEliminarMessageDiv.style.color = 'red';
+                }
+            }
+        });
+    }
+
+    // Cargar los administradores al iniciar la página para la sección de eliminación
+    if (selectAdminEliminar) {
+        cargarAdministradoresParaEliminar();
+    }
 });
