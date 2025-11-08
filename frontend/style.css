@@ -400,6 +400,21 @@ footer a {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.form-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end; /* Alinea los elementos en la parte inferior */
+    justify-content: center;
+    max-width: none; /* Sobrescribe el max-width para que haya espacio */
+}
+.form-horizontal > div {
+    flex: 1 1 200px; /* Permite que los contenedores crezcan y se encojan con una base de 200px */
+    min-width: 180px; /* Evita que los inputs se encojan demasiado */
+}
+.form-horizontal .form-submit-container {
+    flex-grow: 0; /* Evita que el contenedor del botón crezca */
+}
 
 .reservas label {
     display: block;
@@ -416,15 +431,26 @@ footer a {
     box-sizing: border-box;
 }
 
-.reservas button[type="submit"] {
+.reservas button[type="submit"], .btn-panel {
     background-color: var(--primary-blue);
     color: white;
-    padding: 10px 15px;
+    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
-    
+    text-decoration: none;
+    margin: 4px 2px;
+}
+
+.btn-panel {
+    background-color: #1f2937;
+    display: flex;
+    flex-wrap: wrap;   
+}
+
+.btn-panel:hover {
+    background-color: #2563eb;
 }
 
 .form-submit-container {

@@ -1,6 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
     const adminDataString = sessionStorage.getItem('admin');
     const welcomeMessageContainer = document.getElementById('welcome-message');
+    const panelNavegacion = document.getElementById('panel-navegacion');
+
+    // --- Lógica para la navegación con botones ---
+    if (panelNavegacion) {
+        panelNavegacion.addEventListener('click', (event) => {
+            // Asegurarse de que se hizo clic en un botón con el atributo data-target
+            if (event.target.tagName === 'BUTTON' && event.target.dataset.target) {
+                const targetId = event.target.dataset.target; 
+                const seccion = document.getElementById(targetId);
+
+                if (seccion) {
+                    seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+    }
 
     if (adminDataString) {
         const admin = JSON.parse(adminDataString);

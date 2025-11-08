@@ -27,154 +27,176 @@
     <main style="padding: 40px;">
         <h2 id="welcome-message">¡Bienvenido!</h2>
                 
+        <div id="panel-navegacion" class="reservas" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-actualizar-habitacion">Actualizar Habitación</button>
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-crear-reserva">Crear Reserva</button>
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-gestionar-reserva">Gestionar Reserva</button>
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-crear-admin">Crear Administrador</button>
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-eliminar-admin">Eliminar Administrador</button>
+            </div>
+        </div>
+
         <hr style="margin: 20px 0;">
         
-        <h3>Actualizar Información de Habitación</h3>
-        <div id="update-message" style="margin-top: 15px;"></div>
+        <div id="seccion-actualizar-habitacion" class="admin-section">
+            <h3>Actualizar Información de Habitación</h3>
+            <div id="update-message" style="margin-top: 15px;"></div>
+    
+            <form id="form-update-habitacion" class="reservas" style="margin-top: 20px;">
+                <label for="select-habitacion-update">Seleccionar Habitación:</label><br>
+                <select id="select-habitacion-update" name="select-habitacion-update">
+                    <option value="">-- Seleccione una habitación --</option>
+                </select><br><br>
+    
+                <label for="update-numero">Número de Habitación:</label><br>
+                <input type="number" id="update-numero" name="update-numero" placeholder="Ej: 101, 202" disabled><br>
+    
+                <label for="update-tipo">Tipo de Habitación:</label><br>
+                <select id="update-tipo" name="update-tipo">
+                    <option value="">-- Seleccione un tipo --</option>
+                    <option value="1 Cama Sencilla">1 Cama Sencilla</option>
+                    <option value="2 Camas Sencillas">2 Camas Sencillas</option>
+                    <option value="1 Cama Doble">1 Cama Doble</option>
+                    <option value="2 Camas Dobles">2 Camas Dobles</option>
+                    <option value="1 Cama Semidoble">1 Cama Semidoble</option>
+                    <option value="2 Camas Semidobles">2 Camas Semidobles</option>
+                </select><br>
+    
+                <label for="update-descripcion">Descripción:</label><br>
+                <div id="update-servicios-container" class="checkbox-group">
+                    <label><input type="checkbox" name="servicios" value="TV"> TV</label>
+                    <label><input type="checkbox" name="servicios" value="Wi-Fi"> Wi-Fi</label>
+                    <label><input type="checkbox" name="servicios" value="Un baño"> Un baño</label>
+                    <label><input type="checkbox" name="servicios" value="Dos baños"> Dos baños</label>
+                    <label><input type="checkbox" name="servicios" value="Jacuzzi"> Jacuzzi</label>
+                    <label><input type="checkbox" name="servicios" value="Aire Acondicionado"> Aire Acondicionado</label>
+                </div>
+                <br>
+    
+                <label for="update-precio">Precio por Noche:</label><br>
+                <input type="number" id="update-precio" name="update-precio" placeholder="Ej: 150000"><br>
+    
+                <input type="hidden" id="update-id-habitacion" name="update-id-habitacion">
+                <div class="form-submit-container">
+                    <input type="submit" value="Actualizar Habitación">
+                </div>
+            </form>
+        </div>
 
-        <form id="form-update-habitacion" class="reservas" style="margin-top: 20px;">
-            <label for="select-habitacion-update">Seleccionar Habitación:</label><br>
-            <select id="select-habitacion-update" name="select-habitacion-update">
-                <option value="">-- Seleccione una habitación --</option>
-                
-            </select><br><br>
+        <hr style="margin: 40px 0;">
 
-            <label for="update-numero">Número de Habitación:</label><br>
-            <input type="number" id="update-numero" name="update-numero" placeholder="Ej: 101, 202" disabled><br>
-
-            <label for="update-tipo">Tipo de Habitación:</label><br>
-            <select id="update-tipo" name="update-tipo">
-                <option value="">-- Seleccione un tipo --</option>
-                <option value="1 Cama Sencilla">1 Cama Sencilla</option>
-                <option value="2 Camas Sencillas">2 Camas Sencillas</option>
-                <option value="1 Cama Doble">1 Cama Doble</option>
-                <option value="2 Camas Dobles">2 Camas Dobles</option>
-                <option value="1 Cama Semidoble">1 Cama Semidoble</option>
-                <option value="2 Camas Semidobles">2 Camas Semidobles</option>
-            </select><br>
-
-            <label for="update-descripcion">Descripción:</label><br>
-            <div id="update-servicios-container" class="checkbox-group">
-                <label><input type="checkbox" name="servicios" value="TV"> TV</label>
-                <label><input type="checkbox" name="servicios" value="Wi-Fi"> Wi-Fi</label>
-                <label><input type="checkbox" name="servicios" value="Un baño"> Un baño</label>
-                <label><input type="checkbox" name="servicios" value="Dos baños"> Dos baños</label>
-                <label><input type="checkbox" name="servicios" value="Jacuzzi"> Jacuzzi</label>
-                <label><input type="checkbox" name="servicios" value="Aire Acondicionado"> Aire Acondicionado</label>
+        <div id="seccion-crear-reserva" class="admin-section">
+            <h3>Crear una Nueva Reserva</h3>
+            <div id="reserva-message" style="margin-top: 15px;"></div>
+    
+            <form id="form-buscar-disponibilidad-admin" class="form-horizontal" style="margin-top: 20px;">
+                <div>
+                    <label for="fecha-llegada">Fecha de Llegada:</label><br>
+                    <input type="date" id="fecha-llegada" name="fecha-llegada" required>
+                </div>
+                <div>
+                    <label for="fecha-salida">Fecha de Salida:</label><br>
+                    <input type="date" id="fecha-salida" name="fecha-salida" required>
+                </div>
+                <div>
+                    <label for="tipo-habitacion-admin">Tipo de Habitación:</label><br>
+                    <select id="tipo-habitacion-admin" name="tipo">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+                <div class="form-submit-container">
+                    <button type="submit">Buscar Disponibilidad</button>
+                </div>
+            </form>
+    
+            <div id="resultados-disponibilidad-admin" class="galeria" style="margin-top: 20px;"></div>
+    
+            <!-- Modal para confirmar reserva -->
+            <div id="modal-reserva" class="modal" style="display:none;">
+                <div class="modal-content">
+                    <span class="close-button">&times;</span>
+                    <h2>Confirmar Reserva</h2>
+                    <div id="detalle-reserva-modal"></div>
+                    <hr>
+                    <h3>Datos del Cliente</h3>
+                    <form id="form-confirmar-reserva-admin">
+                        <label for="nombre-cliente">Nombre Completo:</label><br>
+                        <input type="text" id="nombre-cliente" name="nombre-cliente" required><br>
+                        <label for="email-cliente">Correo Electrónico:</label><br>
+                        <input type="email" id="email-cliente" name="email-cliente" required><br>
+                        <label for="telefono">Teléfono:</label><br>
+                        <input type="tel" id="telefono" name="telefono" required><br>
+                        <div class="form-submit-container">
+                            <button type="submit">Confirmar y Reservar</button>
+                        </div>
+                    </form>
+                    <div id="mensaje-confirmacion-modal" style="margin-top: 15px;"></div>
+                </div>
             </div>
             <br>
-
-            <label for="update-precio">Precio por Noche:</label><br>
-            <input type="number" id="update-precio" name="update-precio" placeholder="Ej: 150000"><br>
-
-            <input type="hidden" id="update-id-habitacion" name="update-id-habitacion">
-            <div class="form-submit-container">
-                <input type="submit" value="Actualizar Habitación">
-            </div>
-        </form>
-
-        <hr style="margin: 40px 0;">
-
-        <h3>Crear una Nueva Reserva</h3>
-        <div id="reserva-message" style="margin-top: 15px;"></div>
-
-        <form id="form-buscar-disponibilidad-admin" class="reservas" style="margin-top: 20px;">
-            <div>
-                <label for="fecha-llegada">Fecha de Llegada:</label><br>
-                <input type="date" id="fecha-llegada" name="fecha-llegada" required>
-            </div>
-            <div>
-                <label for="fecha-salida">Fecha de Salida:</label><br>
-                <input type="date" id="fecha-salida" name="fecha-salida" required>
-            </div>
-            <div>
-                <label for="tipo-habitacion-admin">Tipo de Habitación:</label><br>
-                <select id="tipo-habitacion-admin" name="tipo">
-                    <option value="">Todos los tipos</option>
-                </select>
-            </div>
-            <div class="form-submit-container">
-                <button type="submit">Buscar Disponibilidad</button>
-            </div>
-        </form>
-
-        <div id="resultados-disponibilidad-admin" class="galeria" style="margin-top: 20px;">
-            <!-- Los resultados de la búsqueda aparecerán aquí -->
-        </div>
-
-        <!-- Modal para confirmar reserva -->
-        <div id="modal-reserva" class="modal" style="display:none;">
-            <div class="modal-content">
-                <span class="close-button">&times;</span>
-                <h2>Confirmar Reserva</h2>
-                <div id="detalle-reserva-modal"></div>
-                <hr>
-                <h3>Datos del Cliente</h3>
-                <form id="form-confirmar-reserva-admin">
-                    <label for="nombre-cliente">Nombre Completo:</label><br>
-                    <input type="text" id="nombre-cliente" name="nombre-cliente" required><br>
-                    <label for="email-cliente">Correo Electrónico:</label><br>
-                    <input type="email" id="email-cliente" name="email-cliente" required><br>
-                    <label for="telefono">Teléfono:</label><br>
-                    <input type="tel" id="telefono" name="telefono" required><br>
-                    <div class="form-submit-container">
-                        <button type="submit">Confirmar y Reservar</button>
-                    </div>
-                </form>
-                <div id="mensaje-confirmacion-modal" style="margin-top: 15px;"></div>
-            </div>
         </div>
 
         <hr style="margin: 40px 0;">
 
-        <h3>Gestionar Reservas</h3>
-        <p class="text-center">Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
-        <div id="gestion-message" style="margin-top: 15px;"></div>
-
-        <form id="form-buscar-reservas" class="reservas" style="margin-top: 20px;">
-            <div>
-                <label for="termino-busqueda">Buscar por Correo o Teléfono:</label><br>
-                <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required>
-            </div>
-            <div class="form-submit-container">
-                <button type="submit">Buscar Reservas</button>
-            </div>
-        </form>
-
-        <div id="resultados-reservas-admin" style="margin-top: 20px; overflow-x: auto;">
-            <!-- La tabla con las reservas aparecerá aquí -->
+        <div id="seccion-gestionar-reserva" class="admin-section">
+            <h3>Gestionar Reservas</h3>
+            <p class="text-center">Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
+            <div id="gestion-message" style="margin-top: 15px;"></div>
+    
+            <form id="form-buscar-reservas" class="form-horizontal" style="margin-top: 20px;">
+                <div>
+                    <label for="termino-busqueda">Buscar por Correo o Teléfono:</label><br>
+                    <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required>
+                </div>
+                <div class="form-submit-container">
+                    <button type="submit">Buscar Reservas</button>
+                </div>
+            </form>
+    
+            <div id="resultados-reservas-admin" style="margin-top: 20px; overflow-x: auto;"></div>
         </div>
 
         <hr style="margin: 40px 0;">
 
-        <h3>Crear Nuevo Administrador</h3>
-        <div id="admin-message" style="margin-top: 15px;"></div>
-
-        <form id="form-crear-admin" class="reservas" style="margin-top: 20px;">
-            <div>
-                <label for="nombre-admin">Nombre Completo:</label><br>
-                <input type="text" id="nombre-admin" name="nombre-admin" required>
-            </div>
-            <div>
-                <label for="telefono-admin">Teléfono:</label><br>
-                <input type="tel" id="telefono-admin" name="telefono-admin" required>
-            </div>
-            <div>
-                <label for="correo-admin">Correo Electrónico:</label><br>
-                <input type="email" id="correo-admin" name="correo-admin" required>
-            </div>
-            <div>
-                <label for="clave-admin">Contraseña:</label><br>
-                <input type="password" id="clave-admin" name="clave-admin" required>
-            </div>
-            <div class="form-submit-container">
-                <button type="submit">Crear Administrador</button>
-            </div>
-        </form>
+        <div id="seccion-crear-admin" class="admin-section">
+            <h3>Crear Nuevo Administrador</h3>
+            <div id="admin-message" style="margin-top: 15px;"></div>
+    
+            <form id="form-crear-admin" class="reservas" style="margin-top: 20px;">
+                <div>
+                    <label for="nombre-admin">Nombre Completo:</label><br>
+                    <input type="text" id="nombre-admin" name="nombre-admin" required>
+                </div>
+                <div>
+                    <label for="telefono-admin">Teléfono:</label><br>
+                    <input type="tel" id="telefono-admin" name="telefono-admin" required>
+                </div>
+                <div>
+                    <label for="correo-admin">Correo Electrónico:</label><br>
+                    <input type="email" id="correo-admin" name="correo-admin" required>
+                </div>
+                <div>
+                    <label for="clave-admin">Contraseña:</label><br>
+                    <input type="password" id="clave-admin" name="clave-admin" required>
+                </div>
+                <div class="form-submit-container">
+                    <button type="submit">Crear Administrador</button>
+                </div>
+            </form>
+        </div>
 
         <hr style="margin: 40px 0;">
 
-        <section id="eliminar-administrador">
+        <div id="seccion-eliminar-admin" class="admin-section">
             <h3>Eliminar Administrador</h3>
             <div id="admin-eliminar-message" style="margin-top: 15px;"></div>
             <form id="form-eliminar-admin" class="reservas" style="margin-top: 20px;">
@@ -188,7 +210,7 @@
                     <button type="submit">Eliminar Administrador</button>
                 </div>
             </form>
-        </section>
+        </div>
 
     </main>
     <footer id="contacto" class="bg-dark-text text-white py-12 md:py-16">
