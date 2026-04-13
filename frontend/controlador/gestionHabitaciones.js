@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Elementos para la sección de actualización
+    
     const updateForm = document.getElementById('form-update-habitacion');
     const tipoSelect = document.getElementById('update-tipo');
     const serviciosCheckboxes = document.querySelectorAll('#update-servicios-container input[name="servicios"]');
     const updateMessageDiv = document.getElementById('update-message');
     const selectHabitacionUpdate = document.getElementById('select-habitacion-update');
-    let currentHabitacionIdToUpdate = null; // Para almacenar el ID de la habitación seleccionada
+    let currentHabitacionIdToUpdate = null; 
 
-    // --- Funcionalidad para Actualizar Habitación ---
+    
 
     // Función para cargar todas las habitaciones en el select
     const cargarHabitacionesParaUpdate = async () => {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const habitaciones = await response.json();
-            selectHabitacionUpdate.innerHTML = '<option value="">-- Seleccione una habitación --</option>'; // Limpiar y añadir opción por defecto
+            selectHabitacionUpdate.innerHTML = '<option value="">-- Seleccione una habitación --</option>'; 
             habitaciones.forEach(hab => {
                 const option = document.createElement('option');
                 option.value = hab.idHabitacion;
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función para limpiar y reiniciar el formulario de actualización
     const limpiarFormulario = () => {
-        selectHabitacionUpdate.value = ''; // Reinicia el selector principal
+        selectHabitacionUpdate.value = ''; 
         document.getElementById('update-numero').value = '';
         tipoSelect.value = '';
         serviciosCheckboxes.forEach(checkbox => checkbox.checked = false);
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función para cargar los detalles de una habitación seleccionada en el formulario
     const cargarDetallesHabitacionParaUpdate = async (idHabitacion) => {
-        if (!idHabitacion) { // Si se deselecciona una habitación
+        if (!idHabitacion) { 
             limpiarFormulario();
             return;
         }
@@ -53,30 +53,30 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`http://localhost:3000/api/habitaciones/${idHabitacion}`);
             if (!response.ok) {
-                updateMessageDiv.textContent = 'No se pudieron cargar los detalles de la habitación.';
+                updateMessageDiv.textContent = 'No se logra cargar los detalles de la habitación.';
                 updateMessageDiv.style.color = 'red';
                 return;
             }
             const habitacion = await response.json();
             document.getElementById('update-numero').value = habitacion.NumeroHabitacion;
             
-            // --- Lógica mejorada para seleccionar el tipo de habitación ---
+            
             const tipoGuardado = habitacion.Tipo || '';
             let tipoEncontrado = false;
-            // Recorremos las opciones del select
+            
             for (let i = 0; i < tipoSelect.options.length; i++) {
-                // Si el texto de la opción (ej: "1 Cama Doble") incluye el tipo guardado (ej: "Doble")
+                
                 if (tipoGuardado && tipoSelect.options[i].value.includes(tipoGuardado)) {
                     tipoSelect.value = tipoSelect.options[i].value;
                     tipoEncontrado = true;
-                    break; // Salimos del bucle una vez encontrado
+                    break; 
                 }
             }
-            if (!tipoEncontrado) tipoSelect.value = ''; // Si no se encuentra, se deja en blanco
+            if (!tipoEncontrado) tipoSelect.value = ''; 
 
-            // Limpiar checkboxes antes de marcar los correctos
+            
             serviciosCheckboxes.forEach(checkbox => checkbox.checked = false);
-            // Marcar los checkboxes según la descripción de la BD
+            
             if (habitacion.Descripcion) {
                 const serviciosGuardados = habitacion.Descripcion.split(',').map(s => s.trim());
                 serviciosCheckboxes.forEach(checkbox => {
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('update-precio').value = habitacion.PrecioPorNoche;
             document.getElementById('update-id-habitacion').value = habitacion.idHabitacion;
             currentHabitacionIdToUpdate = habitacion.idHabitacion;
-            updateMessageDiv.textContent = ''; // Limpiar mensajes
+            updateMessageDiv.textContent = ''; 
         } catch (error) {
             console.error('Error al cargar detalles de habitación para update:', error);
             updateMessageDiv.textContent = 'Error al conectar con el servidor para cargar detalles.';
@@ -94,14 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Event listener para el cambio en el select de habitaciones
+    
     if (selectHabitacionUpdate) {
         selectHabitacionUpdate.addEventListener('change', (event) => {
             cargarDetallesHabitacionParaUpdate(event.target.value);
         });
     }
 
-    // Event listener para el envío del formulario de actualización
+    
     if (updateForm) {
         updateForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Limpiamos el formulario para una nueva edición
                     limpiarFormulario();
-                    cargarHabitacionesParaUpdate(); // Recargamos la lista por si cambió algún dato relevante
+                    cargarHabitacionesParaUpdate(); 
                 } else {
                     updateMessageDiv.textContent = result.message || 'Error al actualizar la habitación.';
                     updateMessageDiv.style.color = 'red';

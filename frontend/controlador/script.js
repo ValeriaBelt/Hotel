@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Lógica del Carrusel ---
+    
     const slidesContainer = document.querySelector('.carousel-slides');
     const slides = document.querySelectorAll('.carousel-slide');
     const prevButton = document.querySelector('.carousel-prev');
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (nextButton) {
             nextButton.addEventListener('click', () => {
                 showNextSlide();
-                // Reinicia el intervalo automático al hacer clic manual
+                
                 clearInterval(autoSlideInterval);
                 autoSlideInterval = setInterval(showNextSlide, 5000);
             });
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Avance automático cada 5 segundos
+
         let autoSlideInterval = setInterval(showNextSlide, 5000);
     }
 });

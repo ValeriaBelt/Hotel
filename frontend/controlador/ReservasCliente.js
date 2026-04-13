@@ -8,14 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const termino = document.getElementById('termino-busqueda').value;
 
         try {
-            // Mostramos un mensaje de carga
+            
             resultadosReservasContainer.innerHTML = '<p>Buscando sus reservas...</p>';
             gestionMessageDiv.textContent = '';
 
             const response = await fetch(`http://localhost:3000/api/reservas/buscar?termino=${encodeURIComponent(termino)}`);
             const reservas = await response.json();
 
-            resultadosReservasContainer.innerHTML = ''; // Limpiamos el contenedor
+            resultadosReservasContainer.innerHTML = ''; 
 
             if (!response.ok) {
                 throw new Error(reservas.message || 'Ocurrió un error al buscar.');
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             resultadosReservasContainer.appendChild(tabla);
 
-            // Limpiamos el formulario de búsqueda
+            // se limpia el formulario de búsqueda
             formBuscarReservas.reset();
 
         } catch (error) {
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Delegación de eventos para el botón de cancelar
+    
     resultadosReservasContainer.addEventListener('click', async (event) => {
         if (event.target.classList.contains('btn-cancelar')) {
             const idReserva = event.target.dataset.id;

@@ -3,10 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeMessageContainer = document.getElementById('welcome-message');
     const panelNavegacion = document.getElementById('panel-navegacion');
 
-    // --- Lógica para la navegación con botones ---
+    
     if (panelNavegacion) {
         panelNavegacion.addEventListener('click', (event) => {
-            // Asegurarse de que se hizo clic en un botón con el atributo data-target
+            
             if (event.target.tagName === 'BUTTON' && event.target.dataset.target) {
                 const targetId = event.target.dataset.target; 
                 const seccion = document.getElementById(targetId);
@@ -20,29 +20,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (adminDataString) {
         const admin = JSON.parse(adminDataString);
-        // Mostramos el mensaje de bienvenida con el nombre del administrador
+        // mensaje de bienvenida con nombre del administrador
         welcomeMessageContainer.textContent = `¡Bienvenido, ${admin.Nombre}!`;
     } else {
-        // Si no hay datos de admin, es porque no ha iniciado sesión.
-        // Lo redirigimos a la página de login. Esto es una medida de seguridad básica.
+        
         window.location.href = 'administrador.html';
     }
 
-    // --- Funcionalidad para Crear Reservas desde el Panel de Admin ---
+    //Crear Reservas desde el Panel de Admin 
 
     const formBuscarDisponibilidad = document.getElementById('form-buscar-disponibilidad-admin');
     const resultadosContainer = document.getElementById('resultados-disponibilidad-admin');
     const tipoHabitacionSelect = document.getElementById('tipo-habitacion-admin');
     const reservaMessageDiv = document.getElementById('reserva-message');
 
-    // Modal y sus elementos
+    
     const modal = document.getElementById('modal-reserva');
     const modalCloseButton = document.querySelector('.close-button');
     const detalleReservaModal = document.getElementById('detalle-reserva-modal');
     const formConfirmarReserva = document.getElementById('form-confirmar-reserva-admin');
     const mensajeConfirmacionModal = document.getElementById('mensaje-confirmacion-modal');
 
-    let datosReservaActual = {}; // Para guardar temporalmente los datos de la reserva
+    let datosReservaActual = {}; 
 
     // Cargar tipos de habitación en el select
     const cargarTiposHabitacion = async () => {
@@ -92,10 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'muestra';
                 card.innerHTML = `
+                    <a target="_blank" href="img/Habitacion1CamaDoble.jpg">
+                        <img src="img/Habitacion1CamaDoble.jpg" alt="${hab.Tipo}" width="500" height="300">
+                    </a>
                     <div class="descripcion">
-                        <p><strong>Habitación N° ${hab.NumeroHabitacion}</strong></p>
-                        <p>${hab.Tipo}</p>
-                        <p>Precio: $${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)} / noche</p>
+                        <p><b>Habitación N° ${hab.NumeroHabitacion}</b> - ${hab.Tipo}</p>
+                        <p>${hab.Descripcion}</p>
+                        <p><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)} / noche</p>
                         <button class="btn-reservar-admin" data-id="${hab.idHabitacion}">Reservar</button>
                     </div>
                 `;
@@ -104,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al buscar disponibilidad:', error);
-            reservaMessageDiv.textContent = 'Error al conectar con el servidor para buscar disponibilidad.';
-            reservaMessageDiv.style.color = 'red';
+            reservaMessageDiv.textContent = 'Reserva creada con éxito.';
+            reservaMessageDiv.style.color = 'green';
         }
     });
 

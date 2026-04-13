@@ -18,7 +18,7 @@ const startServer = async () => {
         const pool = await new sql.ConnectionPool(dbConfig).connect(); 
         console.log('Conectado a la base de datos SQL Server.');
 
-        // --- Definición de rutas de la API ---
+
 
         app.get('/api/habitaciones/all', async (req, res) => {
             try {
@@ -93,7 +93,7 @@ const startServer = async () => {
                 updateFields.push('Tipo = @tipo');
                 request.input('tipo', sql.NVarChar, tipo);
             }
-            if (descripcion !== undefined && descripcion !== null) { // Permite que la descripción sea una cadena vacía
+            if (descripcion !== undefined && descripcion !== null) { 
                 updateFields.push('Descripcion = @descripcion');
                 request.input('descripcion', sql.NVarChar, descripcion);
             }
@@ -198,25 +198,25 @@ const startServer = async () => {
                 await transaction.begin();
                 const request = new sql.Request(transaction);
 
-                // 1. Buscar si el cliente ya existe por su email
+                // Busca si el cliente ya existe por su correo
                 let clienteResult = await request.input('email', sql.NVarChar, email)
                 .query('SELECT idCliente FROM Clientes WHERE Email = @email');
                 
                 let idCliente;
 
                 if (clienteResult.recordset.length > 0) {
-                    // Si el cliente existe, usamos su ID
+                    // Si el cliente existe, se usa su ID
                     idCliente = clienteResult.recordset[0].idCliente;
                 } else {
-                    // Si el cliente no existe, lo creamos y obtenemos su nuevo ID
+                    // Si el cliente no existe, se crea y obtiene su nuevo ID
                     const insertClienteResult = await request.input('nombre', sql.NVarChar, nombre)
                     .input('telefono', sql.NVarChar, telefono)
                     .query('INSERT INTO Clientes (Nombre, Email, Telefono) OUTPUT INSERTED.idCliente VALUES (@nombre, @email, @telefono)');
                     idCliente = insertClienteResult.recordset[0].idCliente;
                 }
 
-                // 2. Crear la reserva con el idCliente obtenido
-                const reservaRequest = new sql.Request(transaction); // Nuevo request para la inserción final
+                // Crear la reserva con el idCliente obtenido
+                const reservaRequest = new sql.Request(transaction); 
                 const resultReserva = await reservaRequest
                     .input('idHabitacion', sql.Int, idHabitacion)
                     .input('idCliente', sql.Int, idCliente)
@@ -238,7 +238,7 @@ const startServer = async () => {
                 } catch (rollbackErr) {
                     console.error('Error al hacer rollback de la transacción:', rollbackErr.stack);
                 }
-                // Verificar si es un error de clave única (cliente duplicado por email, aunque ya lo manejamos)
+                // Verificar si es un error de clave única
                 if (err.number === 2627 || err.number === 2601) {
                     return res.status(409).json({ message: 'Error de conflicto. Posiblemente un dato duplicado.' });
                 }
@@ -277,7 +277,7 @@ const startServer = async () => {
             }
         });
 
-        // Endpoint para cancelar (eliminar) una reserva
+        // Endpoint para cancelar una reserva
         app.delete('/api/reservas/:id', async (req, res) => {
             const { id } = req.params;
             try {
@@ -304,7 +304,7 @@ const startServer = async () => {
                     .input('nombre', sql.NVarChar, nombre)
                     .input('telefono', sql.NVarChar, telefono)
                     .input('correo', sql.NVarChar, correo)
-                    .input('clave', sql.NVarChar, clave) // Recuerda usar hashing en un proyecto real
+                    .input('clave', sql.NVarChar, clave) 
                     .query('INSERT INTO Administrador (Nombre, Telefono, Correo, Clave) VALUES (@nombre, @telefono, @correo, @clave)');
 
                 if (result.rowsAffected[0] > 0) {
@@ -314,7 +314,7 @@ const startServer = async () => {
                 }
             } catch (err) {
                 console.error('Error al registrar administrador:', err.stack);
-                if (err.number === 2627) { // Error de violación de clave única (correo duplicado)
+                if (err.number === 2627) { 
                     return res.status(409).json({ message: 'El correo electrónico ya está registrado.' });
                 }
                 res.status(500).json({ message: 'Error interno del servidor al registrar el administrador.' });

@@ -98,7 +98,7 @@
             <h3>Crear una Nueva Reserva</h3>
             <div id="reserva-message" style="margin-top: 15px;"></div>
     
-            <form id="form-buscar-disponibilidad-admin" class="form-horizontal" style="margin-top: 20px;">
+            <form id="form-buscar-disponibilidad-admin" class="reservas" style="margin-top: 20px;">
                 <div>
                     <label for="fecha-llegada">Fecha de Llegada:</label><br>
                     <input type="date" id="fecha-llegada" name="fecha-llegada" required>
@@ -120,7 +120,7 @@
     
             <div id="resultados-disponibilidad-admin" class="galeria" style="margin-top: 20px;"></div>
     
-            <!-- Modal para confirmar reserva -->
+            <!--confirmar reserva -->
             <div id="modal-reserva" class="modal" style="display:none;">
                 <div class="modal-content">
                     <span class="close-button">&times;</span>
@@ -152,7 +152,7 @@
             <p class="text-center">Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
             <div id="gestion-message" style="margin-top: 15px;"></div>
     
-            <form id="form-buscar-reservas" class="form-horizontal" style="margin-top: 20px;">
+            <form id="form-buscar-reservas" class="reservas" style="margin-top: 20px;">
                 <div>
                     <label for="termino-busqueda">Buscar por Correo o Teléfono:</label><br>
                     <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required>
@@ -216,7 +216,7 @@
     <footer id="contacto" class="bg-dark-text text-white py-12 md:py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mb-10 border-b border-gray-700 pb-8">
-                <!-- Columna 1: Logo y Contacto -->
+                
                 <div>
                     <span class="text-2xl font-extrabold text-primary-blue mb-4 block">HotelSys</span>
                     <p class="text-sm text-gray-400 mb-3">Dirección: Calle 8a #24-26, Ibague-Tolima, Colombia</p>
@@ -224,7 +224,7 @@
                     <p class="text-sm text-gray-400">Email: informacion@hotelsys.com</p>
                 </div>
 
-                <!-- Columna 2: Navegación Rápida -->
+                
                 <div>
                     <h4 class="text-lg font-semibold mb-4 text-primary-blue">Explorar</h4>
                     <ul class="space-y-2">
@@ -235,7 +235,7 @@
                     </ul>
                 </div>
 
-                <!-- Columna 3: Información Legal -->
+                
                 <div>
                     <h4 class="text-lg font-semibold mb-4 text-primary-blue">Legal</h4>
                     <ul class="space-y-2">
@@ -253,7 +253,7 @@
         </div>
     </footer>
 
-    <script src="panel-admin.js"></script>
-    <script src="gestionHabitaciones.js"></script> 
+    <script src="controlador/panel-admin.js"></script>
+    <script src="controlador/gestionHabitaciones.js"></script> 
 </body>
 </html>

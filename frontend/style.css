@@ -50,7 +50,7 @@ input[type=button], input[type=submit], input[type=reset] {
 
 input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover,
 .reservas button[type="submit"]:hover {
-    background-color: #2563eb; /* Un azul más oscuro para el efecto hover */
+    background-color: #2563eb; 
 }
 
 div.muestra div.descripcion {
@@ -96,7 +96,7 @@ nav ul li a {
 }
 
 nav ul li a:hover {
-    color: #3b82f6; /* Color azul primario al pasar el mouse */
+    color: #3b82f6; 
 }
 
 .logo {
@@ -173,7 +173,7 @@ nav ul {
 }
 }
 
-/* Responsive: móviles */
+
 @media (max-width: 600px) {
 body {
     padding: 0 5px;
@@ -247,69 +247,133 @@ div.detalles-habitacion {
     background-color: #b0f2f6 ;
 }
 
-/* --- Estilos para el nuevo Footer --- */
-
-/* Definición de variables de color para que sea más fácil de mantener */
 :root {
-    --dark-text: #1f2937; /* Un gris oscuro para el fondo */
-    --primary-blue: #3b82f6; /* Azul primario */
+    --dark-text: #1f2937; 
+    --primary-blue: #3b82f6; 
     --gray-400: #9ca3af;
     --gray-500: #6b7281;
     --gray-700: #374151;
 }
 
-/* Clases de color */
-.bg-dark-text { background-color: var(--dark-text); }
-.text-white { color: #ffffff; }
-.text-gray-400 { color: var(--gray-400); }
-.text-gray-500 { color: var(--gray-500); }
-.text-primary-blue { color: var(--primary-blue); }
-.border-gray-700 { border-color: var(--gray-700); }
+.bg-dark-text { 
+    background-color: var(--dark-text); 
+}
 
-/* Espaciado y Padding */
-.py-12 { padding-top: 3rem; padding-bottom: 3rem; }
-.pb-8 { padding-bottom: 2rem; }
-.pt-4 { padding-top: 1rem; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.mb-10 { margin-bottom: 2.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mx-auto { margin-left: auto; margin-right: auto; }
+.text-white { 
+    color: #ffffff; 
+}
 
-/* Ancho máximo */
-.max-w-7xl { max-width: 80rem; }
+.text-gray-400 { 
+    color: var(--gray-400); 
+}
 
-/* Tipografía */
-.text-2xl { font-size: 1.5rem; line-height: 2rem; }
-.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.font-extrabold { font-weight: 800; }
-.font-semibold { font-weight: 600; }
-.text-center { text-align: center; }
+.text-gray-500 { 
+    color: var(--gray-500); 
+}
 
-/* Layout (Grid) */
-.grid { display: grid; }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.gap-8 { gap: 2rem; }
-.border-b { border-bottom-width: 1px; }
-.block { display: block; }
+.text-primary-blue { 
+    color: var(--primary-blue); 
+}
 
-/* Listas y enlaces */
+.border-gray-700 { 
+    border-color: var(--gray-700); 
+}
+
+.py-12 { 
+    padding-top: 3rem; padding-bottom: 3rem; 
+}
+
+.pb-8 { 
+    padding-bottom: 2rem; 
+}
+
+.pt-4 { 
+    padding-top: 1rem; 
+}
+
+.px-4 { 
+    padding-left: 1rem; padding-right: 1rem; 
+}
+
+.mb-10 { 
+    margin-bottom: 2.5rem; 
+}
+
+.mb-4 { 
+    margin-bottom: 1rem; 
+}
+
+.mb-3 { 
+    margin-bottom: 0.75rem; 
+}
+
+.mx-auto { 
+    margin-left: auto; margin-right: auto; 
+}
+
+.max-w-7xl { 
+    max-width: 80rem; 
+}
+
+.text-2xl { 
+    font-size: 1.5rem; line-height: 2rem; 
+}
+
+.text-lg { 
+    font-size: 1.125rem; line-height: 1.75rem; 
+}
+
+.text-sm { 
+    font-size: 0.875rem; line-height: 1.25rem; 
+}
+
+.font-extrabold { 
+    font-weight: 800; 
+}
+
+.font-semibold { 
+    font-weight: 600; 
+}
+
+.text-center { 
+    text-align: center; 
+}
+
+.grid { 
+    display: grid; 
+}
+
+.grid-cols-2 { 
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+}
+
+.gap-8 { 
+    gap: 2rem; 
+}
+
+.border-b { 
+    border-bottom-width: 1px; 
+}
+
+.block { 
+    display: block; 
+}
+
+
 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
     margin-top: 0.5rem;
 }
+
 footer a.transition:hover {
     color: #ffffff;
 }
+
 footer a {
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
 }
 
-/* --- Media Queries para responsividad del footer --- */
-
-/* Para tablets y pantallas medianas (md) */
 @media (min-width: 768px) {
     .md\:py-16 { padding-top: 4rem; padding-bottom: 4rem; }
     .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -317,24 +381,24 @@ footer a {
     .md\:col-span-1 { grid-column: span 1 / span 1; }
 }
 
-/* Para pantallas pequeñas (sm) */
+
 @media (min-width: 640px) {
     .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
 }
 
-/* Para pantallas grandes (lg) */
+
 @media (min-width: 1024px) {
     .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
 }
 
 .carousel-container {
     position: relative;
-    width: 100%; /* Ocupa todo el ancho */
-    margin: 2rem 0; /* Eliminamos márgenes laterales */
+    width: 100%; 
+    margin: 2rem 0; 
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    max-height: 550px; /* Altura máxima para el carrusel */
-    background-color: #333; /* Fondo oscuro por si la imagen no carga */
+    max-height: 550px; 
+    background-color: #333; 
 }
 
 .carousel-slides {
@@ -350,9 +414,9 @@ footer a {
 .carousel-slide img {
     width: 100%;
     display: block;
-    height: 550px; /* Altura fija para la imagen */
-    object-fit: cover; /* Asegura que la imagen cubra el espacio sin deformarse */
-    object-position: center; /* Centra la imagen dentro de su contenedor */
+    height: 550px; 
+    object-fit: cover; 
+    object-position: center; 
 }
 
 .carousel-caption {
@@ -382,14 +446,19 @@ footer a {
     transition: background-color 0.3s ease;
 }
 
-.carousel-prev { left: 0; border-radius: 0 3px 3px 0; }
-.carousel-next { right: 0; border-radius: 3px 0 0 3px; }
+.carousel-prev { 
+    left: 0; border-radius: 0 3px 3px 0; 
+}
+
+.carousel-next { 
+    right: 0; border-radius: 3px 0 0 3px; 
+}
 
 .carousel-prev:hover, .carousel-next:hover {
     background-color: rgba(0, 0, 0, 0.8);
 }
 
-/* Estilos para la gestión de reservas */
+
 .reservas {
     width: 80%;
     max-width: 600px;
@@ -404,16 +473,18 @@ footer a {
     display: flex;
     flex-wrap: wrap;
     gap: 15px;
-    align-items: flex-end; /* Alinea los elementos en la parte inferior */
+    align-items: flex-end; 
     justify-content: center;
-    max-width: none; /* Sobrescribe el max-width para que haya espacio */
+    max-width: none; 
 }
+
 .form-horizontal > div {
-    flex: 1 1 200px; /* Permite que los contenedores crezcan y se encojan con una base de 200px */
-    min-width: 180px; /* Evita que los inputs se encojan demasiado */
+    flex: 1 1 200px; 
+    min-width: 180px; 
 }
+
 .form-horizontal .form-submit-container {
-    flex-grow: 0; /* Evita que el contenedor del botón crezca */
+    flex-grow: 0; 
 }
 
 .reservas label {
@@ -461,15 +532,14 @@ footer a {
     margin-top: 10px;
 }
 
-/* Estilos para la tabla de reservas */
+
 .tabla-reservas {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-.tabla-reservas th,
-.tabla-reservas td {
+.tabla-reservas th, .tabla-reservas td {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -498,7 +568,7 @@ footer a {
     background-color: #c9302c;
 }
 
-/* Estilos para el modal */
+
 .modal {
     display: none;
     position: fixed;

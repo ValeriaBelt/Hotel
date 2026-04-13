@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const detalleContainer = document.getElementById('detalle-reserva-container'); // Corregido el ID
+    const detalleContainer = document.getElementById('detalle-reserva-container'); 
     const mensajeConfirmacion = document.getElementById('mensaje-confirmacion');
     const formConfirmar = document.getElementById('form-confirmar-reserva');
 
-    // 1. Obtener los parámetros de la URL
+    
     const params = new URLSearchParams(window.location.search);
     const idHabitacion = params.get('id');
     const fechaLlegada = params.get('llegada');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 2. Cargar y mostrar los detalles de la habitación y la reserva
+    
     try {
         const response = await fetch(`http://localhost:3000/api/habitaciones/${idHabitacion}`);
         if (!response.ok) {
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const habitacion = await response.json();
 
-        // Calcular el número de noches
+        
         const llegada = new Date(fechaLlegada);
         const salida = new Date(fechaSalida);
         const diffTime = Math.abs(salida - llegada);
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         detalleContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
     }
 
-    // 3. Manejar el envío del formulario de confirmación
+    
     formConfirmar.addEventListener('submit', async (event) => {
         event.preventDefault();
         
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const emailCliente = document.getElementById('email-cliente').value;
         const telefonoCliente = document.getElementById('telefono').value;
 
-        // Validar que el teléfono solo contenga 10 números
+        
         const telefonoRegex = /^\d{10}$/;
         if (!telefonoRegex.test(telefonoCliente)) {
             mensajeConfirmacion.innerHTML = '<p style="color: red;">El teléfono debe contener exactamente 10 dígitos numéricos.</p>';
@@ -82,8 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (response.ok) {
                 mensajeConfirmacion.innerHTML = `<p style="color: green; font-weight: bold;">${resultado.message} ¡Gracias por su reserva!</p>`;
-                formConfirmar.reset(); // Limpiar el formulario
-                formConfirmar.style.display = 'none'; // Ocultar el formulario
+                formConfirmar.reset(); 
+                formConfirmar.style.display = 'none'; 
             } else {
                 mensajeConfirmacion.innerHTML = `<p style="color: red;">Error: ${resultado.message}</p>`;
             }
