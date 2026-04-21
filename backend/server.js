@@ -1,12 +1,26 @@
 const express = require('express');
 const sql = require('mssql/msnodesqlv8'); 
 const cors = require('cors');
+const rateLimit = require('express-rate-limit'); 
+const helmet = require('helmet');               
+const morgan = require('morgan');               
+const https = require('https');                 
+const fs = require('fs');                       
+const path = require('path');
 
 const app = express();
+app.use(helmet());
 app.use(cors()); 
 app.use(express.json()); 
+app.use(morgan('combined')); 
 
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {message: 'Bloqueado por seguridad (Mitigación DoS).'}
+});
 
+app.use('/api', apiLimiter);
 
 const dbConfig = {
     connectionString: 'Driver={ODBC Driver 17 for SQL Server};Server=(localdb)\\valeriat;Database=HotelSys;Trusted_Connection=yes;'
@@ -350,13 +364,23 @@ const startServer = async () => {
                 console.error('Error al eliminar administrador:', err.stack);
                 res.status(500).json({ message: 'Error interno del servidor.' });
             }
+});
+
+        const sslPath = path.join(__dirname, 'security');
+        const sslOptions = {
+            key: fs.readFileSync(path.join(sslPath, 'server.key')),
+            cert: fs.readFileSync(path.join(sslPath, 'server.crt'))
+        };
+
+        const port = 3443; 
+        https.createServer(sslOptions, app).listen(port, () => {
+            console.log('----------------------------------------------------');
+            console.log(`SERVIDOR HotelSys OPERANDO EN MODO SEGURO (HTTPS)`);
+            console.log(`URL: https://localhost:${port}`);
+            console.log('Protecciones activas: TLS 1.3, Rate-Limit, Helmet');
+            console.log('----------------------------------------------------');
         });
 
-
-        const port = 3000;
-        app.listen(port, () => {
-            console.log(`Servidor corriendo en http://localhost:${port}`);
-        });        
     } catch (err) {
         console.error('Error al conectar a la base de datos:', err.stack);
     }
