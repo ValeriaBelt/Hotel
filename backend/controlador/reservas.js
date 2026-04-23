@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const cargarTiposHabitacion = async () => {
         try {
-            const response = await fetch('https://localhost/api/habitaciones/tipos');
+            const response = await fetch('https://localhost:3443/api/habitaciones/tipos');
             if (!response.ok) {
                 console.error('No se pudieron cargar los tipos de habitación.');
                 return;

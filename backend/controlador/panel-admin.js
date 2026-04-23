@@ -104,8 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al buscar disponibilidad:', error);
-            reservaMessageDiv.textContent = 'Reserva creada con éxito.';
-            reservaMessageDiv.style.color = 'green';
             reservaMessageDiv.textContent = 'Ocurrió un error al buscar la disponibilidad. Inténtalo de nuevo.';
             reservaMessageDiv.style.color = 'red';
         }
