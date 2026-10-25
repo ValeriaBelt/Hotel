@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const cargarTiposHabitacion = async () => {
         try {
-            const response = await fetch('https://localhost:3443/api/habitaciones/tipos');
+            const response = await fetch(window.hotelApiUrl('/api/habitaciones/tipos'));
             if (!response.ok) {
                 console.error('No se pudieron cargar los tipos de habitación.');
                 return;
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        const url = new URL('https://localhost:3443/api/habitaciones/disponibles');
+        const url = new URL(window.hotelApiUrl('/api/habitaciones/disponibles'));
         url.searchParams.append('llegada', fechaLlegada);
         url.searchParams.append('salida', fechaSalida);
         if (tipo) {

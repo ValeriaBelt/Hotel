@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultadosReservasContainer.innerHTML = '<p>Buscando sus reservas...</p>';
             gestionMessageDiv.textContent = '';
 
-            const response = await fetch(`https://localhost:3443/api/reservas/buscar?termino=${encodeURIComponent(termino)}`);
+            const response = await fetch(window.hotelApiUrl(`/api/reservas/buscar?termino=${encodeURIComponent(termino)}`));
             const reservas = await response.json();
 
             resultadosReservasContainer.innerHTML = ''; 
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
                 try {
-                    const response = await fetch(`https://localhost:3443/api/reservas/${idReserva}`, { method: 'DELETE' });
+                    const response = await fetch(window.hotelApiUrl(`/api/reservas/${idReserva}`), { method: 'DELETE' });
                     const resultado = await response.json();
 
                     gestionMessageDiv.textContent = resultado.message;

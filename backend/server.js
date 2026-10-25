@@ -5,14 +5,79 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');               
 const morgan = require('morgan');               
 const https = require('https');                 
+const http = require('http');
 const fs = require('fs');                       
 const path = require('path');
+const { randomBytes } = require('node:crypto');
+const { createAdminSecurity } = require('./admin-security');
+const { hashPassword } = require('./security-service');
+
+function loadMfaEncryptionKey() {
+    const configuredKey = process.env.HOTEL_MFA_ENCRYPTION_KEY;
+    if (configuredKey) {
+        if (!/^[0-9a-fA-F]{64}$/.test(configuredKey)) {
+            throw new Error('HOTEL_MFA_ENCRYPTION_KEY debe contener exactamente 64 caracteres hexadecimales.');
+        }
+        return Buffer.from(configuredKey, 'hex');
+    }
+
+    const keyPath = path.join(__dirname, 'security', 'hotel-mfa.key');
+    try {
+        const key = fs.readFileSync(keyPath);
+        if (key.length !== 32) {
+            throw new Error('El archivo de clave MFA debe contener exactamente 32 bytes.');
+        }
+        return key;
+    } catch (error) {
+        if (error.code !== 'ENOENT') {
+            throw error;
+        }
+    }
+
+    const key = randomBytes(32);
+    try {
+        fs.writeFileSync(keyPath, key, { flag: 'wx', mode: 0o600 });
+        return key;
+    } catch (error) {
+        if (error.code !== 'EEXIST') {
+            throw error;
+        }
+        const existingKey = fs.readFileSync(keyPath);
+        if (existingKey.length !== 32) {
+            throw new Error('El archivo de clave MFA debe contener exactamente 32 bytes.');
+        }
+        return existingKey;
+    }
+}
+
+const mfaEncryptionKey = loadMfaEncryptionKey();
+const allowedOrigins = new Set(
+    (process.env.HOTEL_CORS_ORIGINS ||
+        'http://localhost:5500,http://127.0.0.1:5500,http://localhost:5501,http://127.0.0.1:5501,https://localhost:3443')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean)
+);
 
 const app = express();
 app.use(helmet());
-app.use(cors()); 
+app.use(cors({
+    origin(origin, callback) {
+        callback(null, !origin || allowedOrigins.has(origin));
+    },
+    credentials: true
+}));
 app.use(express.json()); 
 app.use(morgan('combined')); 
+app.use('/backend/controlador', express.static(path.join(__dirname, 'controlador')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use('/api/admin', (req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+        !allowedOrigins.has(req.get('Origin'))) {
+        return res.status(403).json({ message: 'Origen no autorizado.' });
+    }
+    next();
+});
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -31,6 +96,8 @@ const startServer = async () => {
     try {
         const pool = await new sql.ConnectionPool(dbConfig).connect(); 
         console.log('Conectado a la base de datos SQL Server.');
+        const adminSecurity = createAdminSecurity({ pool, sql, encryptionKey: mfaEncryptionKey });
+        await adminSecurity.initialize();
 
 
 
@@ -44,30 +111,14 @@ const startServer = async () => {
             }
         });
         
-        app.post('/api/admin/login', async (req, res) => {
-            const { correo, clave } = req.body; 
-            if (!correo || !clave) {
-                return res.status(400).json({ message: 'El correo y la contraseña son obligatorios.' });
-            }
+        app.post('/api/admin/login', adminSecurity.login);
+        app.post('/api/admin/verify-mfa', adminSecurity.verifyMfa);
+        app.get('/api/admin/session', adminSecurity.requireSession, adminSecurity.getCurrentSession);
+        app.post('/api/admin/logout', adminSecurity.logout);
+        app.use('/api/admin', adminSecurity.requireSession);
+        app.get('/api/admin/security/audit', adminSecurity.listAuditEvents);
         
-            try {
-                const result = await pool.request()
-                    .input('correo', sql.NVarChar, correo)
-                    .input('clave', sql.NVarChar, clave) 
-                    .query('SELECT Nombre, Correo FROM Administrador WHERE Correo = @correo AND Clave = @clave');
-        
-                if (result.recordset.length > 0) {
-                    res.json({ message: 'Inicio de sesión exitoso', admin: result.recordset[0] });
-                } else {
-                    res.status(401).json({ message: 'Credenciales incorrectas.' });
-                }
-            } catch (err) {
-                console.error('Error en el login:', err); 
-                res.status(500).json({ message: 'Error interno del servidor' });
-            }
-        });
-        
-        app.post('/api/habitaciones', async (req, res) => {
+        app.post('/api/habitaciones', adminSecurity.requireSession, async (req, res) => {
             const { numero, tipo, descripcion, precio } = req.body;
         
             if (numero === undefined || numero === null || numero === '' ||
@@ -96,7 +147,7 @@ const startServer = async () => {
             }
         });
         
-        app.put('/api/habitaciones/:id', async (req, res) => {
+        app.put('/api/habitaciones/:id', adminSecurity.requireSession, async (req, res) => {
             const { id } = req.params;
             const { tipo, descripcion, precio } = req.body;
             
@@ -308,8 +359,13 @@ const startServer = async () => {
         app.post('/api/admin/register', async (req, res) => {
             const { nombre, telefono, correo, clave } = req.body;
 
-            if (!nombre || !telefono || !correo || !clave) {
-                return res.status(400).json({ message: 'Todos los campos son obligatorios: nombre, teléfono, correo y clave.' });
+            if (typeof nombre !== 'string' || typeof telefono !== 'string' ||
+                typeof correo !== 'string' || typeof clave !== 'string' ||
+                !nombre.trim() || !telefono.trim() || !correo.trim() ||
+                clave.length < 12 || clave.length > 128) {
+                return res.status(400).json({
+                    message: 'Todos los campos son obligatorios y la contraseña debe tener entre 12 y 128 caracteres.'
+                });
             }
 
             try {
@@ -318,10 +374,15 @@ const startServer = async () => {
                     .input('nombre', sql.NVarChar, nombre)
                     .input('telefono', sql.NVarChar, telefono)
                     .input('correo', sql.NVarChar, correo)
-                    .input('clave', sql.NVarChar, clave) 
-                    .query('INSERT INTO Administrador (Nombre, Telefono, Correo, Clave) VALUES (@nombre, @telefono, @correo, @clave)');
+                    .input('clave', sql.VarChar(255), await hashPassword(clave))
+                    .query(`
+                        INSERT INTO Administrador (Nombre, Telefono, Correo, Clave)
+                        OUTPUT INSERTED.idAdministrador
+                        VALUES (@nombre, @telefono, @correo, @clave)
+                    `);
 
                 if (result.rowsAffected[0] > 0) {
+                    await adminSecurity.recordAdminCreated(result.recordset[0].idAdministrador);
                     res.status(201).json({ message: 'Administrador creado exitosamente.' });
                 } else {
                     throw new Error('No se pudo crear el administrador.');
@@ -349,6 +410,12 @@ const startServer = async () => {
         // Endpoint para eliminar un administrador
         app.delete('/api/admin/:id', async (req, res) => {
             const { id } = req.params;
+            if (!/^\d+$/.test(id)) {
+                return res.status(400).json({ message: 'El identificador de administrador no es válido.' });
+            }
+            if (Number(id) === req.admin.id) {
+                return res.status(400).json({ message: 'No puedes eliminar la cuenta con la que tienes la sesión activa.' });
+            }
 
             try {
                 const result = await pool.request()
@@ -356,6 +423,7 @@ const startServer = async () => {
                     .query('DELETE FROM Administrador WHERE idAdministrador = @id');
 
                 if (result.rowsAffected[0] > 0) {
+                    await adminSecurity.recordAdminDeleted(Number(id));
                     res.json({ message: 'Administrador eliminado exitosamente.' });
                 } else {
                     res.status(404).json({ message: 'No se encontró el administrador para eliminar.' });
@@ -381,8 +449,21 @@ const startServer = async () => {
             console.log('----------------------------------------------------');
         });
 
+        if (process.env.NODE_ENV !== 'production') {
+            for (const host of ['127.0.0.1', '::1']) {
+                const localApi = http.createServer(app);
+                localApi.on('error', error => {
+                    console.error(`No se pudo iniciar la API local en http://${host}:3000:`, error);
+                });
+                localApi.listen(3000, host, () => {
+                    console.log(`API local para Live Server disponible en http://${host}:3000`);
+                });
+            }
+        }
+
     } catch (err) {
         console.error('Error al conectar a la base de datos:', err.stack);
+        process.exitCode = 1;
     }
 };
 

@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const adminDataString = sessionStorage.getItem('admin');
     const welcomeMessageContainer = document.getElementById('welcome-message');
     const panelNavegacion = document.getElementById('panel-navegacion');
+    const panelContent = document.getElementById('admin-content');
+    const frontendPath = window.location.pathname.includes('/frontend/') ? '/frontend/' : '/';
 
     
     if (panelNavegacion) {
@@ -18,14 +19,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (adminDataString) {
-        const admin = JSON.parse(adminDataString);
-        // mensaje de bienvenida con nombre del administrador
-        welcomeMessageContainer.textContent = `¡Bienvenido, ${admin.Nombre}!`;
-    } else {
-        
-        window.location.href = 'administrador.html';
-    }
+    fetch(window.hotelApiUrl('/api/admin/session'), { credentials: 'include' })
+        .then(async response => {
+            if (!response.ok) {
+                window.location.href = `${frontendPath}administrador.html`;
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+            welcomeMessageContainer.textContent = `¡Bienvenido, ${data.admin.Nombre}!`;
+            panelContent.hidden = false;
+        })
+        .catch(error => {
+            console.error('No se pudo comprobar la sesión del administrador:', error);
+            window.location.href = `${frontendPath}administrador.html`;
+        });
 
     //Crear Reservas desde el Panel de Admin 
 
@@ -44,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cargar tipos de habitación en el select
     const cargarTiposHabitacion = async () => {
         try {
-            const response = await fetch('https://localhost:3443/api/habitaciones/tipos');
+            const response = await fetch(window.hotelApiUrl('/api/habitaciones/tipos'));
             if (!response.ok) return;
             const tipos = await response.json();
             tipos.forEach(tipoObj => {
@@ -74,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = new URLSearchParams({ llegada, salida, tipo }).toString();
 
         try {
-            const response = await fetch(`https://localhost:3443/api/habitaciones/disponibles?${query}`);
+            const response = await fetch(window.hotelApiUrl(`/api/habitaciones/disponibles?${query}`));
             const habitaciones = await response.json();
 
             reservaMessageDiv.textContent = '';
@@ -119,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
             datosReservaActual = { idHabitacion, fechaLlegada, fechaSalida };
 
             try {
-                const response = await fetch(`https://localhost:3443/api/habitaciones/${idHabitacion}`);
+                const response = await fetch(window.hotelApiUrl(`/api/habitaciones/${idHabitacion}`));
                 const habitacion = await response.json();
 
                 const llegada = new Date(fechaLlegada);
@@ -177,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = { ...datosReservaActual, ...datosCliente };
 
         try {
-            const response = await fetch('https://localhost:3443/api/reservas', {
+            const response = await fetch(window.hotelApiUrl('/api/reservas'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -217,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const termino = document.getElementById('termino-busqueda').value;
 
         try {
-            const response = await fetch(`https://localhost:3443/api/reservas/buscar?termino=${encodeURIComponent(termino)}`);
+            const response = await fetch(window.hotelApiUrl(`/api/reservas/buscar?termino=${encodeURIComponent(termino)}`));
             const reservas = await response.json();
 
             gestionMessageDiv.textContent = '';
@@ -275,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
                 try {
-                    const response = await fetch(`https://localhost:3443/api/reservas/${idReserva}`, {
+                    const response = await fetch(window.hotelApiUrl(`/api/reservas/${idReserva}`), {
                         method: 'DELETE'
                     });
                     const resultado = await response.json();
@@ -336,8 +346,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await fetch('https://localhost:3443/api/admin/register', {
+                const response = await fetch(window.hotelApiUrl('/api/admin/register'), {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, telefono, correo, clave }),
                 });
@@ -367,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Función para cargar todos los administradores en el select
     const cargarAdministradoresParaEliminar = async () => {
         try {
-            const response = await fetch('https://localhost:3443/api/admin/all');
+            const response = await fetch(window.hotelApiUrl('/api/admin/all'), { credentials: 'include' });
             if (!response.ok) {
                 console.error('No se pudieron cargar los administradores para eliminar.');
                 return;
@@ -405,8 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (confirm('¿Estás seguro de que deseas eliminar este administrador? Esta acción no se puede deshacer.')) {
                 try {
-                    const response = await fetch(`https://localhost:3443/api/admin/${idAdministrador}`, {
-                        method: 'DELETE'
+                    const response = await fetch(window.hotelApiUrl(`/api/admin/${idAdministrador}`), {
+                        method: 'DELETE',
+                        credentials: 'include'
                     });
 
                     const resultado = await response.json();

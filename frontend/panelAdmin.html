@@ -19,12 +19,12 @@
         <nav class="menu">
             <ul>
                 <li><a href="index.html">Ver Sitio</a></li>
-
+                <li><button id="admin-logout" type="button">Cerrar sesión</button></li>
             </ul>
         </nav>
     </header>
 
-    <main style="padding: 40px;">
+    <main id="admin-content" hidden style="padding: 40px;">
         <h2 id="welcome-message">¡Bienvenido!</h2>
                 
         <div id="panel-navegacion" class="reservas" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
@@ -43,10 +43,21 @@
             <div class="form-submit-container">
                 <button class="btn-panel" data-target="seccion-eliminar-admin">Eliminar Administrador</button>
             </div>
+            <div class="form-submit-container">
+                <button class="btn-panel" data-target="seccion-bitacora-seguridad">Bitácora de seguridad</button>
+            </div>
         </div>
 
         <hr style="margin: 20px 0;">
-        
+
+        <div id="seccion-bitacora-seguridad" class="admin-section">
+            <h3>Bitácora de seguridad de administradores</h3>
+            <p>Los eventos están firmados para detectar modificaciones en la bitácora.</p>
+            <div id="security-audit-message" role="status"></div>
+            <button id="refresh-security-audit" type="button">Actualizar bitácora</button>
+            <div id="security-audit-entries"></div>
+        </div>
+
         <div id="seccion-actualizar-habitacion" class="admin-section">
             <h3>Actualizar Información de Habitación</h3>
             <div id="update-message" style="margin-top: 15px;"></div>
@@ -185,8 +196,8 @@
                     <input type="email" id="correo-admin" name="correo-admin" required>
                 </div>
                 <div>
-                    <label for="clave-admin">Contraseña:</label><br>
-                    <input type="password" id="clave-admin" name="clave-admin" required>
+                    <label for="clave-admin">Contraseña (mínimo 12 caracteres):</label><br>
+                    <input type="password" id="clave-admin" name="clave-admin" minlength="12" maxlength="128" autocomplete="new-password" required>
                 </div>
                 <div class="form-submit-container">
                     <button type="submit">Crear Administrador</button>
@@ -253,7 +264,9 @@
         </div>
     </footer>
 
+    <script src="../backend/controlador/api-config.js"></script>
     <script src="../backend/controlador/panel-admin.js"></script>
     <script src="../backend/controlador/gestionHabitaciones.js"></script> 
+    <script src="../backend/controlador/seguridad-panel.js"></script>
 </body>
 </html>

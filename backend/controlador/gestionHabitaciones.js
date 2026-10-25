@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Función para cargar todas las habitaciones en el select
     const cargarHabitacionesParaUpdate = async () => {
         try {
-            const response = await fetch('https://localhost:3443/api/habitaciones/all');
+            const response = await fetch(window.hotelApiUrl('/api/habitaciones/all'));
             if (!response.ok) {
                 console.error('No se pudieron cargar las habitaciones para actualizar.');
                 return;
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`https://localhost:3443/api/habitaciones/${idHabitacion}`);
+            const response = await fetch(window.hotelApiUrl(`/api/habitaciones/${idHabitacion}`));
             if (!response.ok) {
                 updateMessageDiv.textContent = 'No se logra cargar los detalles de la habitación.';
                 updateMessageDiv.style.color = 'red';
@@ -133,8 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const response = await fetch(`https://localhost:3443/api/habitaciones/${currentHabitacionIdToUpdate}`, {
+                const response = await fetch(window.hotelApiUrl(`/api/habitaciones/${currentHabitacionIdToUpdate}`), {
                     method: 'PUT',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                     },

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     
     try {
-        const response = await fetch(`https://localhost:3443/api/habitaciones/${idHabitacion}`);
+        const response = await fetch(window.hotelApiUrl(`/api/habitaciones/${idHabitacion}`));
         if (!response.ok) {
             throw new Error('No se pudo cargar la información de la habitación.');
         }
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            const response = await fetch('https://localhost:3443/api/reservas', {
+            const response = await fetch(window.hotelApiUrl('/api/reservas'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
