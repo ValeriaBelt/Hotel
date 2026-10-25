@@ -47,14 +47,31 @@ test('encrypts MFA secrets and authenticates audit entries', () => {
         AdminId: 17,
         EventType: 'admin.login.success',
         Details: 'MFA verificado',
+        TargetProfile: 'Test Admin (admin@example.test)',
         CreatedAt: createdAt,
-        Signature: signAuditEvent(17, 'admin.login.success', 'MFA verificado', createdAt, key)
+        Signature: signAuditEvent(
+            17,
+            'admin.login.success',
+            'MFA verificado',
+            createdAt,
+            key,
+            'Test Admin (admin@example.test)'
+        )
     };
     const encrypted = encryptSecret(secret, key);
 
     assert.equal(decryptSecret(encrypted, key), secret);
     assert.equal(verifyAuditEvent(auditEvent, key), true);
     assert.equal(verifyAuditEvent({ ...auditEvent, Details: 'Modificado' }, key), false);
+    assert.equal(verifyAuditEvent({ ...auditEvent, TargetProfile: 'Otro perfil' }, key), false);
+    const legacyEvent = {
+        AdminId: 17,
+        EventType: 'admin.logout',
+        Details: 'Sesión cerrada',
+        CreatedAt: createdAt,
+        Signature: signAuditEvent(17, 'admin.logout', 'Sesión cerrada', createdAt, key)
+    };
+    assert.equal(verifyAuditEvent(legacyEvent, key), true);
     const [nonce, tag, ciphertext] = encrypted.split('.');
     const alteredCiphertext = Buffer.from(ciphertext, 'base64');
     alteredCiphertext[0] ^= 1;

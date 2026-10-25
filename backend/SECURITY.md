@@ -8,8 +8,12 @@ En el primer inicio de sesión de cada administrador, se mostrará una clave sec
 
 Las contraseñas existentes en texto plano se convierten a PBKDF2 al comprobar correctamente la contraseña. Las nuevas cuentas se guardan con hash y requieren una contraseña de al menos 12 caracteres. Después de tres fallos de contraseña o MFA, la cuenta se bloquea durante 30 segundos.
 
+El panel aplica RBAC con los perfiles `Administrador` y `Operador`. Administrador tiene acceso completo, incluida la administración de perfiles y la bitácora; Operador puede gestionar habitaciones y reservas, pero no puede administrar usuarios ni consultar la bitácora. Los registros existentes reciben el rol Administrador al iniciar el backend por primera vez tras la actualización. Al crear un perfil, se debe asignar explícitamente uno de esos roles. El panel muestra el rol de la sesión y una lista de perfiles, visible solo para Administradores.
+
 El backend crea las tablas `AdminSecurity` y `AdminSecurityAudit` si aún no existen. La clave de cifrado MFA se genera y conserva en `backend/security/hotel-mfa.key` para el entorno local; no la elimines ni la compartas, porque se necesita para descifrar los secretos TOTP ya registrados. Mantén la misma clave mientras haya MFA configurado. En producción, configura `HOTEL_MFA_ENCRYPTION_KEY` con una clave de 32 bytes codificada en hexadecimal (64 caracteres) y resguárdala en el gestor de secretos del entorno.
 
 Los cambios de habitaciones y la gestión de administradores requieren una sesión autenticada. Las sesiones usan una cookie `HttpOnly` y `Secure`; las solicitudes administrativas que modifican datos también validan el origen permitido para proteger contra CSRF. Las sesiones se invalidan al reiniciar el servidor.
+
+La bitácora identifica la cuenta o perfil objetivo en los intentos fallidos de contraseña y MFA. Cuando el correo no corresponde a una cuenta registrada, muestra el identificador ingresado. Los eventos históricos que no guardaron el perfil objetivo indican que la cuenta no se puede recuperar; si la cuenta asociada fue eliminada, la bitácora lo indica por separado. Ese dato forma parte de la firma de integridad; los eventos antiguos sin perfil siguen verificándose. La vista se puede filtrar por ataques (fallos de contraseña o MFA), inicios de sesión (verificación MFA, inicio correcto y cierre de sesión) o todos los eventos registrados.
 
 Para ejecutar las pruebas desde `backend`, usa `npm test`.

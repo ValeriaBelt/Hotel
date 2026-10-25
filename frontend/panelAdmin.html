@@ -54,6 +54,11 @@
             <h3>Bitácora de seguridad de administradores</h3>
             <p>Los eventos están firmados para detectar modificaciones en la bitácora.</p>
             <div id="security-audit-message" role="status"></div>
+            <div id="security-audit-filters" role="group" aria-label="Filtrar bitácora">
+                <button type="button" data-audit-category="attacks" aria-pressed="false">Ataques</button>
+                <button type="button" data-audit-category="logins" aria-pressed="false">Inicios de sesión</button>
+                <button type="button" data-audit-category="all" aria-pressed="true">Todos</button>
+            </div>
             <button id="refresh-security-audit" type="button">Actualizar bitácora</button>
             <div id="security-audit-entries"></div>
         </div>
@@ -199,10 +204,20 @@
                     <label for="clave-admin">Contraseña (mínimo 12 caracteres):</label><br>
                     <input type="password" id="clave-admin" name="clave-admin" minlength="12" maxlength="128" autocomplete="new-password" required>
                 </div>
+                <div>
+                    <label for="rol-admin">Rol:</label><br>
+                    <select id="rol-admin" name="rol-admin" required>
+                        <option value="Operador">Operador - Habitaciones y reservas</option>
+                        <option value="Administrador">Administrador - Acceso completo</option>
+                    </select>
+                </div>
                 <div class="form-submit-container">
                     <button type="submit">Crear Administrador</button>
                 </div>
             </form>
+            <h4>Perfiles y roles</h4>
+            <div id="admin-list-message" role="status"></div>
+            <div id="admin-list" style="overflow-x: auto;"></div>
         </div>
 
         <hr style="margin: 40px 0;">

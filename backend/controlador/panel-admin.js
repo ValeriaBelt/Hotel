@@ -29,8 +29,27 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(data => {
             if (!data) return;
-            welcomeMessageContainer.textContent = `¡Bienvenido, ${data.admin.Nombre}!`;
+            const role = data.admin.Rol || 'Administrador';
+            welcomeMessageContainer.textContent = `¡Bienvenido, ${data.admin.Nombre}! | Perfil: ${role}`;
             panelContent.hidden = false;
+
+            if (role === 'Administrador') {
+                if (selectAdminEliminar) {
+                    cargarAdministradoresParaEliminar();
+                    cargarPerfilesAdministrador();
+                }
+            } else {
+                for (const sectionId of [
+                    'seccion-bitacora-seguridad',
+                    'seccion-crear-admin',
+                    'seccion-eliminar-admin'
+                ]) {
+                    const section = document.getElementById(sectionId);
+                    const navigationButton = panelNavegacion.querySelector(`[data-target="${sectionId}"]`);
+                    if (section) section.hidden = true;
+                    if (navigationButton) navigationButton.closest('.form-submit-container').hidden = true;
+                }
+            }
         })
         .catch(error => {
             console.error('No se pudo comprobar la sesión del administrador:', error);
@@ -322,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const telefono = document.getElementById('telefono-admin').value;
             const correo = document.getElementById('correo-admin').value;
             const clave = document.getElementById('clave-admin').value;
+            const rol = document.getElementById('rol-admin').value;
 
             if (!nombre || !telefono || !correo || !clave) {
                 adminMessageDiv.textContent = 'Todos los campos son obligatorios.';
@@ -330,9 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Validar la fortaleza de la contraseña
-            const claveRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            if (!claveRegex.test(clave)) {
-                adminMessageDiv.textContent = `La contraseña debe tener al menos 8 caracteres, incluyendo una mayúscula, una minúscula, un número y un carácter especial.`;
+            if (clave.length < 12 || clave.length > 128) {
+                adminMessageDiv.textContent = 'La contraseña debe tener entre 12 y 128 caracteres.';
                 adminMessageDiv.style.color = 'red';
                 return;
             }
@@ -350,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, telefono, correo, clave }),
+                    body: JSON.stringify({ nombre, telefono, correo, clave, rol }),
                 });
 
                 const resultado = await response.json();
@@ -374,6 +393,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEliminarAdmin = document.getElementById('form-eliminar-admin');
     const adminEliminarMessageDiv = document.getElementById('admin-eliminar-message');
     const selectAdminEliminar = document.getElementById('select-admin-eliminar');
+    const adminList = document.getElementById('admin-list');
+    const adminListMessage = document.getElementById('admin-list-message');
+
+    const cargarPerfilesAdministrador = async () => {
+        try {
+            const response = await fetch(window.hotelApiUrl('/api/admin/all'), { credentials: 'include' });
+            const administradores = await response.json();
+            if (!response.ok) {
+                throw new Error(administradores.message || 'No se pudieron cargar los perfiles.');
+            }
+
+            const table = document.createElement('table');
+            const header = document.createElement('tr');
+            for (const label of ['Nombre', 'Correo', 'Rol']) {
+                const cell = document.createElement('th');
+                cell.textContent = label;
+                header.appendChild(cell);
+            }
+            table.appendChild(header);
+
+            administradores.forEach(admin => {
+                const row = document.createElement('tr');
+                for (const value of [admin.Nombre, admin.Correo, admin.Rol]) {
+                    const cell = document.createElement('td');
+                    cell.textContent = value || '';
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            });
+            adminList.replaceChildren(table);
+            adminListMessage.textContent = '';
+        } catch (error) {
+            console.error('Error al cargar perfiles y roles:', error);
+            adminListMessage.textContent = error.message;
+            adminListMessage.style.color = 'red';
+        }
+    };
 
     // Función para cargar todos los administradores en el select
     const cargarAdministradoresParaEliminar = async () => {
@@ -391,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
             administradores.forEach(admin => {
                 const option = document.createElement('option');
                 option.value = admin.idAdministrador;
-                option.textContent = `${admin.Nombre} (${admin.Correo})`;
+                option.textContent = `${admin.Nombre} (${admin.Correo}) - ${admin.Rol}`;
                 selectAdminEliminar.appendChild(option);
             });
         } catch (error) {
@@ -443,7 +499,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Cargar los administradores al iniciar la página para la sección de eliminación
-    if (selectAdminEliminar) {
-        cargarAdministradoresParaEliminar();
-    }
 });

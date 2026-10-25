@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshButton = document.getElementById('refresh-security-audit');
     const auditEntries = document.getElementById('security-audit-entries');
     const auditMessage = document.getElementById('security-audit-message');
+    const auditFilters = document.getElementById('security-audit-filters');
+    const filterButtons = [...auditFilters.querySelectorAll('[data-audit-category]')];
+    let activeCategory = 'all';
     const frontendPath = window.location.pathname.includes('/frontend/') ? '/frontend/' : '/';
 
     logoutButton.addEventListener('click', async () => {
@@ -28,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
         auditEntries.replaceChildren();
 
         try {
-            const response = await fetch(window.hotelApiUrl('/api/admin/security/audit'), {
+            const url = new URL(window.hotelApiUrl('/api/admin/security/audit'));
+            url.searchParams.set('category', activeCategory);
+            const response = await fetch(url, {
                 credentials: 'include'
             });
             const data = await response.json();
@@ -37,13 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.length === 0) {
-                auditMessage.textContent = 'Todavía no hay eventos registrados.';
+                auditMessage.textContent = activeCategory === 'attacks'
+                    ? 'No hay ataques registrados.'
+                    : activeCategory === 'logins'
+                        ? 'No hay inicios de sesión registrados.'
+                        : 'Todavía no hay eventos registrados.';
                 return;
             }
 
             const table = document.createElement('table');
             const header = document.createElement('tr');
-            for (const label of ['Fecha', 'Evento', 'Detalle', 'Integridad']) {
+            for (const label of ['Fecha', 'Evento', 'Perfil/cuenta objetivo', 'Detalle', 'Integridad']) {
                 const cell = document.createElement('th');
                 cell.textContent = label;
                 header.appendChild(cell);
@@ -55,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const values = [
                     new Date(event.CreatedAt).toLocaleString(),
                     event.EventType,
+                    event.TargetProfile || '—',
                     event.Details,
                     event.IntegrityValid ? 'Válida' : 'ALTERADA'
                 ];
@@ -75,5 +85,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    auditFilters.addEventListener('click', event => {
+        const button = event.target.closest('[data-audit-category]');
+        if (!button || !auditFilters.contains(button)) {
+            return;
+        }
+        activeCategory = button.dataset.auditCategory;
+        for (const filterButton of filterButtons) {
+            filterButton.setAttribute('aria-pressed', String(filterButton === button));
+        }
+        loadAuditEvents();
+    });
+
     refreshButton.addEventListener('click', loadAuditEvents);
+    loadAuditEvents();
 });

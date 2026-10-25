@@ -155,8 +155,11 @@ function createOtpAuthUrl(secret, accountName) {
     return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
 }
 
-function signAuditEvent(adminId, eventType, details, createdAt, auditKey) {
-    const payload = `${adminId ?? ''}|${eventType}|${details}|${createdAt.toISOString()}`;
+function signAuditEvent(adminId, eventType, details, createdAt, auditKey, targetProfile = null) {
+    const legacyPayload = `${adminId ?? ''}|${eventType}|${details}|${createdAt.toISOString()}`;
+    const payload = targetProfile === null || targetProfile === undefined
+        ? legacyPayload
+        : `${legacyPayload}|${targetProfile}`;
     return createHmac('sha256', auditKey).update(payload, 'utf8').digest('hex');
 }
 
@@ -166,7 +169,8 @@ function verifyAuditEvent(event, auditKey) {
         event.EventType,
         event.Details,
         new Date(event.CreatedAt),
-        auditKey
+        auditKey,
+        event.TargetProfile
     ), 'hex');
     const supplied = Buffer.from(event.Signature, 'hex');
     return supplied.length === expected.length && timingSafeEqual(supplied, expected);

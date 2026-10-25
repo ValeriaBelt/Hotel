@@ -25,6 +25,7 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         for (const [token, session] of sessions) {
             if (session.expiresAt <= now) sessions.delete(token);
         }
+
         for (const [token, challenge] of challenges) {
             if (challenge.expiresAt <= now) challenges.delete(token);
         }
@@ -39,10 +40,26 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                     AdminId INT NOT NULL PRIMARY KEY,
                     TotpSecretEncrypted VARCHAR(500) NULL,
                     FailedAttempts INT NOT NULL CONSTRAINT DF_AdminSecurity_FailedAttempts DEFAULT 0,
-                    LockedUntil DATETIME2 NULL
+                    LockedUntil DATETIME2 NULL,
+                    Role NVARCHAR(30) NOT NULL CONSTRAINT DF_AdminSecurity_Role DEFAULT ('Administrador')
                 );
             END;
 
+            IF COL_LENGTH('dbo.AdminSecurity', 'Role') IS NULL
+            BEGIN
+                ALTER TABLE dbo.AdminSecurity
+                ADD Role NVARCHAR(30) NOT NULL
+                    CONSTRAINT DF_AdminSecurity_Role DEFAULT ('Administrador') WITH VALUES;
+            END;
+        `);
+
+        await pool.request().query(`
+            UPDATE dbo.AdminSecurity
+            SET Role = 'Administrador'
+            WHERE Role IS NULL OR Role NOT IN ('Administrador', 'Operador');
+        `);
+
+        await pool.request().query(`
             IF OBJECT_ID('dbo.AdminSecurityAudit', 'U') IS NULL
             BEGIN
                 CREATE TABLE dbo.AdminSecurityAudit (
@@ -50,29 +67,43 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                     AdminId INT NULL,
                     EventType NVARCHAR(100) NOT NULL,
                     Details NVARCHAR(500) NOT NULL,
+                    TargetProfile NVARCHAR(250) NULL,
                     CreatedAt DATETIME2 NOT NULL,
                     Signature CHAR(64) NOT NULL
                 );
             END;
+
+            IF COL_LENGTH('dbo.AdminSecurityAudit', 'TargetProfile') IS NULL
+            BEGIN
+                ALTER TABLE dbo.AdminSecurityAudit
+                ADD TargetProfile NVARCHAR(250) NULL;
+            END;
         `);
     }
 
-    async function recordAudit(adminId, eventType, details) {
+    function formatTargetProfile(admin) {
+        const name = String(admin.Nombre || '').replace(/[\u0000-\u001f\u007f|]/g, ' ').trim();
+        const email = String(admin.Correo || '').replace(/[\u0000-\u001f\u007f|]/g, '').trim();
+        return `${name || 'Administrador'} (${email || `ID ${admin.idAdministrador}`})`.slice(0, 250);
+    }
+
+    async function recordAudit(adminId, eventType, details, targetProfile = null) {
         const createdAt = new Date();
-        const signature = signAuditEvent(adminId, eventType, details, createdAt, encryptionKey);
+        const signature = signAuditEvent(adminId, eventType, details, createdAt, encryptionKey, targetProfile);
         await pool.request()
             .input('adminId', sql.Int, adminId)
             .input('eventType', sql.NVarChar(100), eventType)
             .input('details', sql.NVarChar(500), details)
+            .input('targetProfile', sql.NVarChar(250), targetProfile)
             .input('createdAt', sql.DateTime2, createdAt)
             .input('signature', sql.Char(64), signature)
             .query(`
-                INSERT INTO dbo.AdminSecurityAudit (AdminId, EventType, Details, CreatedAt, Signature)
-                VALUES (@adminId, @eventType, @details, @createdAt, @signature)
+                INSERT INTO dbo.AdminSecurityAudit (AdminId, EventType, Details, TargetProfile, CreatedAt, Signature)
+                VALUES (@adminId, @eventType, @details, @targetProfile, @createdAt, @signature)
             `);
     }
 
-    async function recordFailedAttempt(adminId, eventType, details) {
+    async function recordFailedAttempt(adminId, eventType, details, targetProfile = null) {
         let lockout = null;
 
         if (adminId !== null) {
@@ -86,9 +117,17 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                     ON target.AdminId = source.AdminId
                     WHEN MATCHED THEN
                         UPDATE SET
-                            FailedAttempts = target.FailedAttempts + 1,
+                            FailedAttempts = CASE
+                                WHEN target.LockedUntil IS NOT NULL
+                                    AND target.LockedUntil <= SYSUTCDATETIME()
+                                    THEN 1
+                                ELSE target.FailedAttempts + 1
+                            END,
                             LockedUntil = CASE
-                                WHEN target.FailedAttempts + 1 >= @threshold
+                                WHEN target.LockedUntil IS NOT NULL
+                                    AND target.LockedUntil <= SYSUTCDATETIME()
+                                    THEN NULL
+                                WHEN target.FailedAttempts >= @threshold - 1
                                     THEN DATEADD(SECOND, @lockoutSeconds, SYSUTCDATETIME())
                                 ELSE NULL
                             END
@@ -102,20 +141,34 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                                 ELSE NULL
                             END
                         )
-                    OUTPUT INSERTED.FailedAttempts, INSERTED.LockedUntil;
+                    OUTPUT
+                        INSERTED.FailedAttempts,
+                        CASE
+                            WHEN INSERTED.LockedUntil > SYSUTCDATETIME() THEN CONVERT(bit, 1)
+                            ELSE CONVERT(bit, 0)
+                        END AS IsLocked;
                 `);
             lockout = result.recordset[0];
         }
 
-        await recordAudit(adminId, eventType, details);
+        await recordAudit(adminId, eventType, details, targetProfile);
         return lockout;
     }
 
     async function getLockout(adminId) {
         const result = await pool.request()
             .input('adminId', sql.Int, adminId)
-            .query('SELECT FailedAttempts, LockedUntil FROM dbo.AdminSecurity WHERE AdminId = @adminId');
-        return result.recordset[0] || { FailedAttempts: 0, LockedUntil: null };
+            .query(`
+                SELECT
+                    FailedAttempts,
+                    CASE
+                        WHEN LockedUntil > SYSUTCDATETIME() THEN CONVERT(bit, 1)
+                        ELSE CONVERT(bit, 0)
+                    END AS IsLocked
+                FROM dbo.AdminSecurity
+                WHERE AdminId = @adminId
+            `);
+        return result.recordset[0] || { FailedAttempts: 0, IsLocked: false };
     }
 
     async function completeAuthentication(admin, challenge, req, res) {
@@ -146,7 +199,8 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         const safeAdmin = {
             id: admin.idAdministrador,
             Nombre: admin.Nombre,
-            Correo: admin.Correo
+            Correo: admin.Correo,
+            Rol: challenge.role
         };
         sessions.set(token, {
             admin: safeAdmin,
@@ -176,12 +230,18 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
             const admin = result.recordset[0];
 
             if (!admin) {
-                await recordFailedAttempt(null, 'admin.login.failure', 'Credenciales inválidas');
+                const attemptedAccount = correo.trim().replace(/[\u0000-\u001f\u007f|]/g, '').slice(0, 230);
+                await recordFailedAttempt(
+                    null,
+                    'admin.login.failure',
+                    'Credenciales inválidas',
+                    `Cuenta indicada: ${attemptedAccount}`.slice(0, 250)
+                );
                 return res.status(401).json({ message: 'Credenciales incorrectas.' });
             }
 
             const securityState = await getLockout(admin.idAdministrador);
-            if (securityState.LockedUntil && new Date(securityState.LockedUntil) > new Date()) {
+            if (securityState.IsLocked) {
                 return res.status(423).json({ message: 'Cuenta temporalmente bloqueada. Inténtalo más tarde.' });
             }
 
@@ -190,9 +250,10 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                 const attempt = await recordFailedAttempt(
                     admin.idAdministrador,
                     'admin.login.failure',
-                    'Credenciales inválidas'
+                    'Credenciales inválidas',
+                    formatTargetProfile(admin)
                 );
-                if (attempt.LockedUntil) {
+                if (attempt.IsLocked) {
                     return res.status(423).json({ message: 'Cuenta temporalmente bloqueada. Inténtalo más tarde.' });
                 }
                 return res.status(401).json({ message: 'Credenciales incorrectas.' });
@@ -208,14 +269,16 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
 
             const securityResult = await pool.request()
                 .input('adminId', sql.Int, admin.idAdministrador)
-                .query('SELECT TotpSecretEncrypted FROM dbo.AdminSecurity WHERE AdminId = @adminId');
-            const encryptedSecret = securityResult.recordset[0]?.TotpSecretEncrypted;
+                .query('SELECT TotpSecretEncrypted, Role FROM dbo.AdminSecurity WHERE AdminId = @adminId');
+            const adminSecurity = securityResult.recordset[0];
+            const encryptedSecret = adminSecurity?.TotpSecretEncrypted;
             const setupRequired = !encryptedSecret;
             const secret = setupRequired ? generateTotpSecret() : decryptSecret(encryptedSecret, encryptionKey);
             const token = randomBytes(32).toString('hex');
             const challenge = {
                 token,
                 admin,
+                role: adminSecurity?.Role || 'Administrador',
                 secret,
                 setupRequired,
                 expiresAt: Date.now() + challengeLifetimeMs
@@ -257,7 +320,7 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
 
         try {
             const securityState = await getLockout(challenge.admin.idAdministrador);
-            if (securityState.LockedUntil && new Date(securityState.LockedUntil) > new Date()) {
+            if (securityState.IsLocked) {
                 return res.status(423).json({ message: 'Cuenta temporalmente bloqueada. Inténtalo más tarde.' });
             }
 
@@ -265,9 +328,10 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                 const attempt = await recordFailedAttempt(
                     challenge.admin.idAdministrador,
                     'admin.mfa.failure',
-                    'Código MFA inválido'
+                    'Código MFA inválido',
+                    formatTargetProfile(challenge.admin)
                 );
-                if (attempt.LockedUntil) {
+                if (attempt.IsLocked) {
                     return res.status(423).json({ message: 'Cuenta temporalmente bloqueada. Inténtalo más tarde.' });
                 }
                 return res.status(401).json({ message: 'Código de autenticación incorrecto.' });
@@ -300,6 +364,15 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         next();
     }
 
+    function requireRoles(...roles) {
+        return (req, res, next) => {
+            if (!req.admin || !roles.includes(req.admin.Rol)) {
+                return res.status(403).json({ message: 'No tienes permisos para realizar esta acción.' });
+            }
+            next();
+        };
+    }
+
     function getCurrentSession(req, res) {
         res.json({ admin: req.admin });
     }
@@ -329,23 +402,83 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
 
     async function listAuditEvents(req, res) {
         try {
+            const category = req.query?.category || 'all';
+            const categoryFilters = {
+                attacks: "AND audit.EventType IN ('admin.login.failure', 'admin.mfa.failure')",
+                logins: `AND audit.EventType IN (
+                    'admin.login.success',
+                    'admin.mfa.challenge.started',
+                    'admin.mfa.setup.started',
+                    'admin.logout'
+                )`,
+                all: ''
+            };
+            if (!Object.hasOwn(categoryFilters, category)) {
+                return res.status(400).json({ message: 'La categoría de bitácora no es válida.' });
+            }
+
             const result = await pool.request().query(`
-                SELECT TOP (100) AuditId, AdminId, EventType, Details, CreatedAt, Signature
-                FROM dbo.AdminSecurityAudit
-                ORDER BY AuditId DESC
+                SELECT TOP (100)
+                    audit.AuditId,
+                    audit.AdminId,
+                    audit.EventType,
+                    audit.Details,
+                    audit.TargetProfile,
+                    audit.CreatedAt,
+                    audit.Signature,
+                    admin.Nombre AS TargetAdminName,
+                    admin.Correo AS TargetAdminEmail
+                FROM dbo.AdminSecurityAudit AS audit
+                LEFT JOIN dbo.Administrador AS admin
+                    ON admin.idAdministrador = audit.AdminId
+                WHERE 1 = 1 ${categoryFilters[category]}
+                ORDER BY audit.AuditId DESC
             `);
-            res.json(result.recordset.map(event => ({
-                ...event,
-                IntegrityValid: verifyAuditEvent(event, encryptionKey)
-            })));
+            res.json(result.recordset.map(event => {
+                const integrityValid = verifyAuditEvent(event, encryptionKey);
+                const isFailedAuthentication = event.EventType === 'admin.login.failure'
+                    || event.EventType === 'admin.mfa.failure';
+                let targetProfile = event.TargetProfile;
+
+                if (!targetProfile && isFailedAuthentication) {
+                    if (event.TargetAdminName || event.TargetAdminEmail) {
+                        const name = String(event.TargetAdminName || 'Administrador')
+                            .replace(/[\u0000-\u001f\u007f|]/g, ' ').trim();
+                        const email = String(event.TargetAdminEmail || '').replace(/[\u0000-\u001f\u007f|]/g, '').trim();
+                        targetProfile = `${name} (${email || `ID ${event.AdminId}`})`.slice(0, 250);
+                    } else if (event.AdminId === null) {
+                        targetProfile = 'Cuenta no identificada (el registro histórico no guardó la cuenta objetivo)';
+                    } else {
+                        targetProfile = 'Perfil no disponible (la cuenta asociada ya no existe)';
+                    }
+                }
+
+                const {
+                    TargetAdminName: _targetAdminName,
+                    TargetAdminEmail: _targetAdminEmail,
+                    ...auditEvent
+                } = event;
+                return {
+                    ...auditEvent,
+                    TargetProfile: targetProfile,
+                    IntegrityValid: integrityValid
+                };
+            }));
         } catch (error) {
             console.error('Error al consultar la bitácora de seguridad:', error);
             res.status(500).json({ message: 'No se pudo consultar la bitácora de seguridad.' });
         }
     }
 
-    async function recordAdminCreated(adminId) {
-        await recordAudit(adminId, 'admin.account.created', 'Cuenta de administrador creada');
+    async function recordAdminCreated(adminId, role) {
+        await pool.request()
+            .input('adminId', sql.Int, adminId)
+            .input('role', sql.NVarChar(30), role)
+            .query(`
+                INSERT INTO dbo.AdminSecurity (AdminId, Role)
+                VALUES (@adminId, @role)
+            `);
+        await recordAudit(adminId, 'admin.account.created', `Cuenta creada con rol ${role}`);
     }
 
     async function recordAdminDeleted(adminId) {
@@ -362,6 +495,7 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         logout,
         recordAdminCreated,
         recordAdminDeleted,
+        requireRoles,
         requireSession,
         getCurrentSession,
         verifyMfa

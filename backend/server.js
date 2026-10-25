@@ -116,9 +116,17 @@ const startServer = async () => {
         app.get('/api/admin/session', adminSecurity.requireSession, adminSecurity.getCurrentSession);
         app.post('/api/admin/logout', adminSecurity.logout);
         app.use('/api/admin', adminSecurity.requireSession);
-        app.get('/api/admin/security/audit', adminSecurity.listAuditEvents);
+        app.get(
+            '/api/admin/security/audit',
+            adminSecurity.requireRoles('Administrador'),
+            adminSecurity.listAuditEvents
+        );
         
-        app.post('/api/habitaciones', adminSecurity.requireSession, async (req, res) => {
+        app.post(
+            '/api/habitaciones',
+            adminSecurity.requireSession,
+            adminSecurity.requireRoles('Administrador', 'Operador'),
+            async (req, res) => {
             const { numero, tipo, descripcion, precio } = req.body;
         
             if (numero === undefined || numero === null || numero === '' ||
@@ -145,9 +153,14 @@ const startServer = async () => {
                 console.error('Error al insertar en la base de datos:', err.stack);
                 res.status(500).json({ message: 'Error interno del servidor al añadir habitación.' });
             }
-        });
+            }
+        );
         
-        app.put('/api/habitaciones/:id', adminSecurity.requireSession, async (req, res) => {
+        app.put(
+            '/api/habitaciones/:id',
+            adminSecurity.requireSession,
+            adminSecurity.requireRoles('Administrador', 'Operador'),
+            async (req, res) => {
             const { id } = req.params;
             const { tipo, descripcion, precio } = req.body;
             
@@ -185,7 +198,8 @@ const startServer = async () => {
                 console.error('Error al actualizar la habitación:', err.stack);
                 res.status(500).json({ message: 'Error interno del servidor al actualizar la habitación.' });
             }
-        });
+            }
+        );
         
         app.get('/api/habitaciones/tipos', async (req, res) => {
             try {
@@ -356,15 +370,16 @@ const startServer = async () => {
         });
 
         // Endpoint para registrar un nuevo administrador
-        app.post('/api/admin/register', async (req, res) => {
-            const { nombre, telefono, correo, clave } = req.body;
+        app.post('/api/admin/register', adminSecurity.requireRoles('Administrador'), async (req, res) => {
+            const { nombre, telefono, correo, clave, rol } = req.body;
 
             if (typeof nombre !== 'string' || typeof telefono !== 'string' ||
                 typeof correo !== 'string' || typeof clave !== 'string' ||
                 !nombre.trim() || !telefono.trim() || !correo.trim() ||
-                clave.length < 12 || clave.length > 128) {
+                clave.length < 12 || clave.length > 128 ||
+                !['Administrador', 'Operador'].includes(rol)) {
                 return res.status(400).json({
-                    message: 'Todos los campos son obligatorios y la contraseña debe tener entre 12 y 128 caracteres.'
+                    message: 'Completa todos los campos, elige un rol válido y usa una contraseña de 12 a 128 caracteres.'
                 });
             }
 
@@ -382,7 +397,7 @@ const startServer = async () => {
                     `);
 
                 if (result.rowsAffected[0] > 0) {
-                    await adminSecurity.recordAdminCreated(result.recordset[0].idAdministrador);
+                    await adminSecurity.recordAdminCreated(result.recordset[0].idAdministrador, rol);
                     res.status(201).json({ message: 'Administrador creado exitosamente.' });
                 } else {
                     throw new Error('No se pudo crear el administrador.');
@@ -397,9 +412,18 @@ const startServer = async () => {
         });
 
         // Endpoint para obtener todos los administradores
-        app.get('/api/admin/all', async (req, res) => {
+        app.get('/api/admin/all', adminSecurity.requireRoles('Administrador'), async (req, res) => {
             try {
-                const result = await pool.request().query('SELECT idAdministrador, Nombre, Correo FROM Administrador');
+                const result = await pool.request().query(`
+                    SELECT
+                        a.idAdministrador,
+                        a.Nombre,
+                        a.Correo,
+                        COALESCE(s.Role, 'Administrador') AS Rol
+                    FROM Administrador a
+                    LEFT JOIN dbo.AdminSecurity s ON s.AdminId = a.idAdministrador
+                    ORDER BY a.Nombre, a.Correo
+                `);
                 res.json(result.recordset);
             } catch (err) {
                 console.error('Error al obtener todos los administradores:', err.stack);
@@ -408,7 +432,7 @@ const startServer = async () => {
         });
 
         // Endpoint para eliminar un administrador
-        app.delete('/api/admin/:id', async (req, res) => {
+        app.delete('/api/admin/:id', adminSecurity.requireRoles('Administrador'), async (req, res) => {
             const { id } = req.params;
             if (!/^\d+$/.test(id)) {
                 return res.status(400).json({ message: 'El identificador de administrador no es válido.' });
