@@ -25,6 +25,10 @@
     justify-self: end; 
 }
 
+.menu ul {
+    align-items: center;
+}
+
 .admin {
     margin: 15vh auto; 
     padding: 40px;
@@ -522,6 +526,14 @@ footer a {
 
 .btn-panel:hover {
     background-color: #2563eb;
+}
+
+.btn-panel-danger {
+    background-color: #b91c1c;
+}
+
+.btn-panel-danger:hover {
+    background-color: #991b1b;
 }
 
 .form-submit-container {
