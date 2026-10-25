@@ -50,16 +50,17 @@
 
         <hr style="margin: 20px 0;">
 
-        <div id="seccion-bitacora-seguridad" class="admin-section">
+        <div id="seccion-bitacora-seguridad" class="admin-section" hidden>
             <h3>Bitácora de seguridad de administradores</h3>
             <p>Los eventos están firmados para detectar modificaciones en la bitácora.</p>
             <div id="security-audit-message" role="status"></div>
             <div id="security-audit-filters" role="group" aria-label="Filtrar bitácora">
-                <button type="button" data-audit-category="attacks" aria-pressed="false">Ataques</button>
-                <button type="button" data-audit-category="logins" aria-pressed="false">Inicios de sesión</button>
-                <button type="button" data-audit-category="all" aria-pressed="true">Todos</button>
+                <button class="btn-panel" type="button" data-audit-category="attacks" aria-pressed="false">Ataques</button>
+                <button class="btn-panel" type="button" data-audit-category="logins" aria-pressed="false">Inicios de sesión</button>
+                <button class="btn-panel" type="button" data-audit-category="all" aria-pressed="true">Todos</button>
             </div>
-            <button id="refresh-security-audit" type="button">Actualizar bitácora</button>
+            <button class="btn-panel" id="refresh-security-audit" type="button">Actualizar bitácora</button>
+            <button class="btn-panel" id="close-security-audit" type="button">Cerrar bitácora</button>
             <div id="security-audit-entries"></div>
         </div>
 
@@ -165,7 +166,7 @@
 
         <div id="seccion-gestionar-reserva" class="admin-section">
             <h3>Gestionar Reservas</h3>
-            <p class="text-center">Busca por correo electrónico o teléfono del cliente para ver o cancelar sus reservas.</p>
+            <p class="text-center">Solo Administrador y Operador pueden buscar datos de clientes. Para cancelar cualquier reserva también se requiere el código de gestión del cliente.</p>
             <div id="gestion-message" style="margin-top: 15px;"></div>
     
             <form id="form-buscar-reservas" class="reservas" style="margin-top: 20px;">

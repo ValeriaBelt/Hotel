@@ -32,7 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tipo = tipoHabitacionSelect.value;
 
         if (!fechaLlegada || !fechaSalida) {
-            resultadosDiv.innerHTML = '<p style="color: red; text-align: center;">Debes seleccionar una fecha de llegada y de salida.</p>';
+            resultadosDiv.textContent = 'Debes seleccionar una fecha de llegada y de salida.';
+            resultadosDiv.style.color = 'red';
             return;
         }
 
@@ -45,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            resultadosDiv.innerHTML = '<p style="text-align: center;">Buscando...</p>';
+            resultadosDiv.textContent = 'Buscando…';
+            resultadosDiv.style.color = '';
             const response = await fetch(url);
 
             
@@ -59,48 +61,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al buscar disponibilidad:', error);
-            resultadosDiv.innerHTML = `<p style="color: red; text-align: center;">${error.message || 'Error al conectar con el servidor.'}</p>`;
+            resultadosDiv.textContent = error.message || 'Error al conectar con el servidor.';
+            resultadosDiv.style.color = 'red';
         }
     });
 
     
     const mostrarResultados = (habitaciones, fechaLlegada, fechaSalida) => {
         if (habitaciones.length === 0) {
-            resultadosDiv.innerHTML = '<p style="text-align: center;">No hay habitaciones disponibles para las fechas o el tipo seleccionado.</p>';
+            resultadosDiv.textContent = 'No hay habitaciones disponibles para las fechas o el tipo seleccionado.';
             return;
         }
 
-        resultadosDiv.innerHTML = ''; 
+        resultadosDiv.replaceChildren();
+        resultadosDiv.style.color = '';
 
         habitaciones.forEach(hab => {
-            const habitacionHTML = `
-                <div class="muestra">
-                    <a target="_blank" href="img/Habitacion1CamaDoble.jpg">
-                        <img src="img/Habitacion1CamaDoble.jpg" alt="${hab.Tipo}" width="500" height="300">
-                    </a>
-                    <div class="descripcion">
-                        <p><b>Habitación N° ${hab.NumeroHabitacion}</b> - ${hab.Tipo}</p>
-                        <p>${hab.Descripcion}</p>
-                        <p><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)}/noche</p>
-                        <a href="javascript:void(0)" class="btn-reservar"
-                        data-habitacion-id="${hab.idHabitacion}"
-                        data-fecha-llegada="${fechaLlegada}"
-                        data-fecha-salida="${fechaSalida}">Reservar ahora</a>
-                    </div>
-                </div>
-            `;
-            resultadosDiv.innerHTML += habitacionHTML;
+            const card = document.createElement('div');
+            card.className = 'muestra';
+            const imageLink = document.createElement('a');
+            imageLink.href = 'img/Habitacion1CamaDoble.jpg';
+            imageLink.target = '_blank';
+            imageLink.rel = 'noopener';
+            const image = document.createElement('img');
+            image.src = 'img/Habitacion1CamaDoble.jpg';
+            image.alt = hab.Tipo;
+            image.width = 500;
+            image.height = 300;
+            imageLink.appendChild(image);
+
+            const description = document.createElement('div');
+            description.className = 'descripcion';
+            const title = document.createElement('p');
+            const roomNumber = document.createElement('b');
+            roomNumber.textContent = `Habitación N° ${hab.NumeroHabitacion}`;
+            title.append(roomNumber, ` - ${hab.Tipo}`);
+            const details = document.createElement('p');
+            details.textContent = hab.Descripcion || '';
+            const price = document.createElement('p');
+            const priceLabel = document.createElement('b');
+            priceLabel.textContent = 'Precio: ';
+            price.append(priceLabel, `$${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)}/noche`);
+            const reserveButton = document.createElement('button');
+            reserveButton.type = 'button';
+            reserveButton.className = 'btn-reservar';
+            reserveButton.dataset.habitacionId = hab.idHabitacion;
+            reserveButton.dataset.fechaLlegada = fechaLlegada;
+            reserveButton.dataset.fechaSalida = fechaSalida;
+            reserveButton.textContent = 'Reservar ahora';
+            description.append(title, details, price, reserveButton);
+            card.append(imageLink, description);
+            resultadosDiv.appendChild(card);
         });
     };
 
     // Event listener para los botones "Reservar ahora" usando delegación de eventos
     resultadosDiv.addEventListener('click', (event) => {
-        if (event.target.classList.contains('btn-reservar')) {
-            event.preventDefault(); // Previene el comportamiento por defecto del enlace
+        const button = event.target.closest('.btn-reservar');
+        if (button && resultadosDiv.contains(button)) {
 
-            const habitacionId = event.target.dataset.habitacionId;
-            const fechaLlegada = event.target.dataset.fechaLlegada;
-            const fechaSalida = event.target.dataset.fechaSalida;
+            const habitacionId = button.dataset.habitacionId;
+            const fechaLlegada = button.dataset.fechaLlegada;
+            const fechaSalida = button.dataset.fechaSalida;
             window.location.href = `confirmarReserva.html?id=${habitacionId}&llegada=${fechaLlegada}&salida=${fechaSalida}`;
         }
     });

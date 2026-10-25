@@ -22,7 +22,7 @@ function createResponse() {
     };
 }
 
-test('completes password and MFA login and issues an HTTP local-development session', async () => {
+test('completes MFA login and revokes the session immediately when its role changes', async () => {
     const admin = {
         idAdministrador: 12,
         Nombre: 'Test Admin',
@@ -58,6 +58,9 @@ test('completes password and MFA login and issues an HTTP local-development sess
                             TotpSecretEncrypted: state.encryptedSecret,
                             Role: 'Administrador'
                         }] };
+                    }
+                    if (query.includes('OUTPUT INSERTED.AdminId')) {
+                        return { recordset: [{ AdminId: inputs.adminId }] };
                     }
                     if (query.includes('INSERT INTO dbo.AdminSecurityAudit')) {
                         auditEvents.push({ ...inputs });
@@ -121,6 +124,14 @@ test('completes password and MFA login and issues an HTTP local-development sess
         sessionResponse.json({ admin: sessionRequest.admin });
     });
     assert.equal(sessionResponse.body.admin.id, admin.idAdministrador);
+
+    const updated = await security.setAdminRole(admin.idAdministrador, 'Operador', 99);
+    assert.equal(updated, true);
+    const revokedResponse = createResponse();
+    security.requireSession(sessionRequest, revokedResponse, () => {
+        assert.fail('Changing a role must invalidate active sessions for that profile.');
+    });
+    assert.equal(revokedResponse.statusCode, 401);
 });
 
 test('locks an administrator on the third failed password attempt', async () => {
@@ -245,6 +256,51 @@ test('enforces role middleware and denies operators administrator-only actions',
     assert.equal(deniedResponse.statusCode, 403);
 });
 
+test('persists selected roles when creating profiles and updating existing profiles', async () => {
+    const queries = [];
+    const requests = [];
+    const sql = {
+        Int: 'Int',
+        NVarChar: () => 'NVarChar',
+        Char: () => 'Char',
+        DateTime2: 'DateTime2'
+    };
+    const security = createAdminSecurity({
+        pool: {
+            request() {
+                const inputs = {};
+                requests.push(inputs);
+                return {
+                    input(name, _type, value) {
+                        inputs[name] = value;
+                        return this;
+                    },
+                    async query(query) {
+                        queries.push(query);
+                        return query.includes('OUTPUT INSERTED.AdminId')
+                            ? { recordset: [{ AdminId: 101 }] }
+                            : { recordset: [] };
+                    }
+                };
+            }
+        },
+        sql,
+        encryptionKey: Buffer.alloc(32, 12)
+    });
+
+    await security.recordAdminCreated(101, 'Operador');
+    const updated = await security.setAdminRole(102, 'Operador', 1);
+
+    assert.equal(updated, true);
+    assert.ok(queries[0].includes('MERGE dbo.AdminSecurity'));
+    assert.equal(requests[0].role, 'Operador');
+    assert.equal(requests[1].eventType, 'admin.account.created');
+    assert.ok(queries[2].includes('FROM dbo.Administrador'));
+    assert.equal(requests[2].role, 'Operador');
+    assert.equal(requests[3].adminId, 1);
+    assert.equal(requests[3].details, 'Rol del perfil 102 cambiado a Operador');
+});
+
 test('shows the target profile for historical failed logins without changing audit integrity', async () => {
     const createdAt = new Date('2026-10-25T03:44:00.390Z');
     const auditKey = Buffer.alloc(32, 7);
@@ -284,6 +340,46 @@ test('shows the target profile for historical failed logins without changing aud
     assert.equal(response.body[0].TargetProfile, 'Test Admin (admin@example.test)');
     assert.equal(response.body[0].IntegrityValid, true);
     assert.equal('TargetAdminName' in response.body[0], false);
+});
+
+test('shows which administrator started or ended an authenticated session', async () => {
+    const auditKey = Buffer.alloc(32, 11);
+    const createdAt = new Date('2026-10-25T03:44:00.390Z');
+    const events = ['admin.login.success', 'admin.logout', 'admin.login.failure'].map((eventType, index) => {
+        const details = `Event ${index}`;
+        return {
+            AuditId: index + 1,
+            AdminId: 12,
+            EventType: eventType,
+            Details: details,
+            TargetProfile: null,
+            CreatedAt: createdAt,
+            Signature: signAuditEvent(12, eventType, details, createdAt, auditKey),
+            TargetAdminName: 'Test Admin',
+            TargetAdminEmail: 'admin@example.test'
+        };
+    });
+    const security = createAdminSecurity({
+        pool: {
+            request() {
+                return {
+                    async query() {
+                        return { recordset: events };
+                    }
+                };
+            }
+        },
+        sql: {},
+        encryptionKey: auditKey
+    });
+    const response = createResponse();
+
+    await security.listAuditEvents({}, response);
+
+    assert.equal(response.body[0].ActorProfile, 'Test Admin (admin@example.test)');
+    assert.equal(response.body[1].ActorProfile, 'Test Admin (admin@example.test)');
+    assert.equal(response.body[2].ActorProfile, null);
+    assert.equal(response.body[2].TargetProfile, 'Test Admin (admin@example.test)');
 });
 
 test('filters audit events by attacks, logins, or all recorded events', async () => {

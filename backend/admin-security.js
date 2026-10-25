@@ -171,6 +171,19 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         return result.recordset[0] || { FailedAttempts: 0, IsLocked: false };
     }
 
+    function invalidateAdminAccess(adminId) {
+        for (const [token, session] of sessions) {
+            if (session.admin.id === adminId) {
+                sessions.delete(token);
+            }
+        }
+        for (const [token, challenge] of challenges) {
+            if (challenge.admin.idAdministrador === adminId) {
+                challenges.delete(token);
+            }
+        }
+    }
+
     async function completeAuthentication(admin, challenge, req, res) {
         if (challenge.setupRequired) {
             await pool.request()
@@ -434,11 +447,15 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                 WHERE 1 = 1 ${categoryFilters[category]}
                 ORDER BY audit.AuditId DESC
             `);
+            res.setHeader('Cache-Control', 'no-store');
             res.json(result.recordset.map(event => {
                 const integrityValid = verifyAuditEvent(event, encryptionKey);
                 const isFailedAuthentication = event.EventType === 'admin.login.failure'
                     || event.EventType === 'admin.mfa.failure';
+                const isAuthenticatedSessionEvent = event.EventType === 'admin.login.success'
+                    || event.EventType === 'admin.logout';
                 let targetProfile = event.TargetProfile;
+                let actorProfile = null;
 
                 if (!targetProfile && isFailedAuthentication) {
                     if (event.TargetAdminName || event.TargetAdminEmail) {
@@ -453,6 +470,17 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                     }
                 }
 
+                if (isAuthenticatedSessionEvent) {
+                    if (event.TargetAdminName || event.TargetAdminEmail) {
+                        const name = String(event.TargetAdminName || 'Administrador')
+                            .replace(/[\u0000-\u001f\u007f|]/g, ' ').trim();
+                        const email = String(event.TargetAdminEmail || '').replace(/[\u0000-\u001f\u007f|]/g, '').trim();
+                        actorProfile = `${name} (${email || `ID ${event.AdminId}`})`.slice(0, 250);
+                    } else {
+                        actorProfile = 'Perfil no disponible (la cuenta asociada ya no existe)';
+                    }
+                }
+
                 const {
                     TargetAdminName: _targetAdminName,
                     TargetAdminEmail: _targetAdminEmail,
@@ -460,6 +488,7 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
                 } = event;
                 return {
                     ...auditEvent,
+                    ActorProfile: actorProfile,
                     TargetProfile: targetProfile,
                     IntegrityValid: integrityValid
                 };
@@ -475,16 +504,51 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
             .input('adminId', sql.Int, adminId)
             .input('role', sql.NVarChar(30), role)
             .query(`
-                INSERT INTO dbo.AdminSecurity (AdminId, Role)
-                VALUES (@adminId, @role)
+                MERGE dbo.AdminSecurity WITH (HOLDLOCK) AS target
+                USING (SELECT @adminId AS AdminId) AS source
+                ON target.AdminId = source.AdminId
+                WHEN MATCHED THEN
+                    UPDATE SET Role = @role
+                WHEN NOT MATCHED THEN
+                    INSERT (AdminId, Role)
+                    VALUES (source.AdminId, @role);
             `);
         await recordAudit(adminId, 'admin.account.created', `Cuenta creada con rol ${role}`);
+    }
+
+    async function setAdminRole(adminId, role, actorId) {
+        const result = await pool.request()
+            .input('adminId', sql.Int, adminId)
+            .input('role', sql.NVarChar(30), role)
+            .query(`
+                MERGE dbo.AdminSecurity WITH (HOLDLOCK) AS target
+                USING (
+                    SELECT idAdministrador AS AdminId
+                    FROM dbo.Administrador
+                    WHERE idAdministrador = @adminId
+                ) AS source
+                ON target.AdminId = source.AdminId
+                WHEN MATCHED THEN
+                    UPDATE SET Role = @role
+                WHEN NOT MATCHED THEN
+                    INSERT (AdminId, Role)
+                    VALUES (source.AdminId, @role)
+                OUTPUT INSERTED.AdminId;
+            `);
+        if (result.recordset.length === 0) {
+            return false;
+        }
+
+        invalidateAdminAccess(adminId);
+        await recordAudit(actorId, 'admin.account.role.changed', `Rol del perfil ${adminId} cambiado a ${role}`);
+        return true;
     }
 
     async function recordAdminDeleted(adminId) {
         await pool.request()
             .input('adminId', sql.Int, adminId)
             .query('DELETE FROM dbo.AdminSecurity WHERE AdminId = @adminId');
+        invalidateAdminAccess(adminId);
         await recordAudit(adminId, 'admin.account.deleted', 'Cuenta de administrador eliminada');
     }
 
@@ -494,6 +558,7 @@ function createAdminSecurity({ pool, sql, encryptionKey }) {
         login,
         logout,
         recordAdminCreated,
+        setAdminRole,
         recordAdminDeleted,
         requireRoles,
         requireSession,

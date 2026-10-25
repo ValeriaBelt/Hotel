@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const seccion = document.getElementById(targetId);
 
                 if (seccion) {
+                    if (targetId === 'seccion-bitacora-seguridad') {
+                        seccion.hidden = false;
+                        seccion.dispatchEvent(new Event('security-audit-open'));
+                    }
                     seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
@@ -29,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(data => {
             if (!data) return;
+            currentAdminId = Number(data.admin.id);
             const role = data.admin.Rol || 'Administrador';
             welcomeMessageContainer.textContent = `¡Bienvenido, ${data.admin.Nombre}! | Perfil: ${role}`;
             panelContent.hidden = false;
@@ -110,24 +115,43 @@ document.addEventListener('DOMContentLoaded', () => {
             resultadosContainer.innerHTML = '';
 
             if (habitaciones.length === 0) {
-                resultadosContainer.innerHTML = '<p>No hay habitaciones disponibles para las fechas y tipo seleccionados.</p>';
+                resultadosContainer.textContent = 'No hay habitaciones disponibles para las fechas y tipo seleccionados.';
                 return;
             }
 
             habitaciones.forEach(hab => {
                 const card = document.createElement('div');
                 card.className = 'muestra';
-                card.innerHTML = `
-                    <a target="_blank" href="img/Habitacion1CamaDoble.jpg">
-                        <img src="img/Habitacion1CamaDoble.jpg" alt="${hab.Tipo}" width="500" height="300">
-                    </a>
-                    <div class="descripcion">
-                        <p><b>Habitación N° ${hab.NumeroHabitacion}</b> - ${hab.Tipo}</p>
-                        <p>${hab.Descripcion}</p>
-                        <p><b>Precio:</b> $${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)} / noche</p>
-                        <button class="btn-reservar-admin" data-id="${hab.idHabitacion}">Reservar</button>
-                    </div>
-                `;
+                const imageLink = document.createElement('a');
+                imageLink.href = 'img/Habitacion1CamaDoble.jpg';
+                imageLink.target = '_blank';
+                imageLink.rel = 'noopener';
+                const image = document.createElement('img');
+                image.src = 'img/Habitacion1CamaDoble.jpg';
+                image.alt = hab.Tipo;
+                image.width = 500;
+                image.height = 300;
+                imageLink.appendChild(image);
+
+                const description = document.createElement('div');
+                description.className = 'descripcion';
+                const title = document.createElement('p');
+                const roomNumber = document.createElement('b');
+                roomNumber.textContent = `Habitación N° ${hab.NumeroHabitacion}`;
+                title.append(roomNumber, ` - ${hab.Tipo}`);
+                const details = document.createElement('p');
+                details.textContent = hab.Descripcion || '';
+                const price = document.createElement('p');
+                const priceLabel = document.createElement('b');
+                priceLabel.textContent = 'Precio: ';
+                price.append(priceLabel, `$${new Intl.NumberFormat('es-CO').format(hab.PrecioPorNoche)} / noche`);
+                const reserveButton = document.createElement('button');
+                reserveButton.type = 'button';
+                reserveButton.className = 'btn-reservar-admin';
+                reserveButton.dataset.id = hab.idHabitacion;
+                reserveButton.textContent = 'Reservar';
+                description.append(title, details, price, reserveButton);
+                card.append(imageLink, description);
                 resultadosContainer.appendChild(card);
             });
 
@@ -156,16 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const noches = Math.ceil(Math.abs(salida - llegada) / (1000 * 60 * 60 * 24));
                 const precioTotal = noches * habitacion.PrecioPorNoche;
 
-                detalleReservaModal.innerHTML = `
-                    <p><strong>Habitación:</strong> N° ${habitacion.NumeroHabitacion} - ${habitacion.Tipo}</p>
-                    <p><strong>Fecha de Llegada:</strong> ${fechaLlegada}</p>
-                    <p><strong>Fecha de Salida:</strong> ${fechaSalida}</p>
-                    <p><strong>Total Noches:</strong> ${noches}</p>
-                    <p><strong>Precio Total:</strong> $${new Intl.NumberFormat('es-CO').format(precioTotal)}</p>
-                `;
+                const createDetail = (label, value) => {
+                    const paragraph = document.createElement('p');
+                    const heading = document.createElement('strong');
+                    heading.textContent = `${label}: `;
+                    paragraph.append(heading, value);
+                    return paragraph;
+                };
+                detalleReservaModal.replaceChildren(
+                    createDetail('Habitación', `N° ${habitacion.NumeroHabitacion} - ${habitacion.Tipo}`),
+                    createDetail('Fecha de Llegada', fechaLlegada),
+                    createDetail('Fecha de Salida', fechaSalida),
+                    createDetail('Total Noches', String(noches)),
+                    createDetail('Precio Total', `$${new Intl.NumberFormat('es-CO').format(precioTotal)}`)
+                );
 
                 formConfirmarReserva.reset();
-                mensajeConfirmacionModal.innerHTML = '';
+                mensajeConfirmacionModal.replaceChildren();
                 modal.style.display = 'block';
 
             } catch (error) {
@@ -199,7 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validar que el teléfono solo contenga 10 números
         const telefonoRegex = /^\d{10}$/;
         if (!telefonoRegex.test(datosCliente.telefono)) {
-            mensajeConfirmacionModal.innerHTML = '<p style="color: red;">El teléfono debe contener exactamente 10 dígitos numéricos.</p>';
+            mensajeConfirmacionModal.textContent = 'El teléfono debe contener exactamente 10 dígitos numéricos.';
+            mensajeConfirmacionModal.style.color = 'red';
             return;
         }
 
@@ -215,20 +247,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultado = await response.json();
 
             if (response.ok) {
-                mensajeConfirmacionModal.innerHTML = `<p style="color: green; font-weight: bold;">${resultado.message}</p>`;
+                const message = document.createElement('p');
+                message.textContent = resultado.message;
+                message.style.color = 'green';
+                mensajeConfirmacionModal.replaceChildren(message);
+                if (resultado.managementCode) {
+                    const codeLabel = document.createElement('p');
+                    codeLabel.textContent = 'Código de gestión para entregar al cliente (se muestra una sola vez):';
+                    const code = document.createElement('code');
+                    code.textContent = resultado.managementCode;
+                    code.style.wordBreak = 'break-all';
+                    codeLabel.append(document.createElement('br'), code);
+                    mensajeConfirmacionModal.appendChild(codeLabel);
+                }
                 formConfirmarReserva.reset();
-                // Opcional: cerrar modal y refrescar búsqueda después de un tiempo
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    formBuscarDisponibilidad.reset(); // Limpiamos el formulario de búsqueda de disponibilidad
-                    formBuscarDisponibilidad.dispatchEvent(new Event('submit')); // Refresca la búsqueda
-                }, 2000);
             } else {
-                mensajeConfirmacionModal.innerHTML = `<p style="color: red;">Error: ${resultado.message}</p>`;
+                mensajeConfirmacionModal.textContent = `Error: ${resultado.message}`;
+                mensajeConfirmacionModal.style.color = 'red';
             }
         } catch (error) {
             console.error('Error al crear la reserva:', error);
-            mensajeConfirmacionModal.innerHTML = '<p style="color: red;">No se pudo conectar con el servidor para crear la reserva.</p>';
+            mensajeConfirmacionModal.textContent = 'No se pudo conectar con el servidor para crear la reserva.';
+            mensajeConfirmacionModal.style.color = 'red';
         }
     });
 
@@ -246,45 +286,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const termino = document.getElementById('termino-busqueda').value;
 
         try {
-            const response = await fetch(window.hotelApiUrl(`/api/reservas/buscar?termino=${encodeURIComponent(termino)}`));
+            const response = await fetch(window.hotelApiUrl('/api/admin/reservas/buscar'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ termino })
+            });
             const reservas = await response.json();
+            if (!response.ok) {
+                throw new Error(reservas.message || 'No se pudieron buscar las reservas.');
+            }
 
             gestionMessageDiv.textContent = '';
-            resultadosReservasContainer.innerHTML = '';
+            resultadosReservasContainer.replaceChildren();
 
             if (reservas.length === 0) {
-                resultadosReservasContainer.innerHTML = '<p>No se encontraron reservas para el término de búsqueda proporcionado.</p>';
+                resultadosReservasContainer.textContent = 'No se encontraron reservas para el término de búsqueda proporcionado.';
                 return;
             }
 
             const tabla = document.createElement('table');
             tabla.className = 'tabla-reservas';
-            tabla.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Email</th>
-                        <th>Teléfono</th>
-                        <th>Habitación</th>
-                        <th>Llegada</th>
-                        <th>Salida</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${reservas.map(res => `
-                        <tr data-id-reserva="${res.idReserva}">
-                            <td>${res.Nombre}</td>
-                            <td>${res.Email}</td>
-                            <td>${res.Telefono}</td>
-                            <td>N° ${res.NumeroHabitacion} (${res.Tipo})</td>
-                            <td>${new Date(res.FechaEntrada).toLocaleDateString()}</td>
-                            <td>${new Date(res.FechaSalida).toLocaleDateString()}</td>
-                            <td><button class="btn-cancelar" data-id="${res.idReserva}">Cancelar</button></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            `;
+            const header = document.createElement('tr');
+            for (const label of ['Cliente', 'Email', 'Teléfono', 'Habitación', 'Llegada', 'Salida', 'Acción']) {
+                const cell = document.createElement('th');
+                cell.textContent = label;
+                header.appendChild(cell);
+            }
+            const tableHead = document.createElement('thead');
+            tableHead.appendChild(header);
+            tabla.appendChild(tableHead);
+
+            const tableBody = document.createElement('tbody');
+            for (const reservation of reservas) {
+                const row = document.createElement('tr');
+                row.dataset.idReserva = reservation.idReserva;
+                const values = [
+                    reservation.Nombre,
+                    reservation.Email,
+                    reservation.Telefono,
+                    `N° ${reservation.NumeroHabitacion} (${reservation.Tipo})`,
+                    new Date(reservation.FechaEntrada).toLocaleDateString(),
+                    new Date(reservation.FechaSalida).toLocaleDateString()
+                ];
+                for (const value of values) {
+                    const cell = document.createElement('td');
+                    cell.textContent = value ?? '';
+                    row.appendChild(cell);
+                }
+                const actionCell = document.createElement('td');
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'btn-cancelar';
+                cancelButton.dataset.id = reservation.idReserva;
+                cancelButton.textContent = 'Cancelar';
+                actionCell.appendChild(cancelButton);
+                row.appendChild(actionCell);
+                tableBody.appendChild(row);
+            }
+            tabla.appendChild(tableBody);
             resultadosReservasContainer.appendChild(tabla);
 
             // Limpiamos el formulario de búsqueda de reservas
@@ -292,20 +351,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Error al buscar reservas:', error);
-            gestionMessageDiv.textContent = 'Error al conectar con el servidor para buscar reservas.';
+            gestionMessageDiv.textContent = error.message || 'Error al conectar con el servidor para buscar reservas.';
             gestionMessageDiv.style.color = 'red';
         }
     });
 
     // Event listener para los botones de cancelar (usando delegación de eventos)
     resultadosReservasContainer.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('btn-cancelar')) {
-            const idReserva = event.target.dataset.id;
+        const button = event.target.closest('.btn-cancelar');
+        if (button && resultadosReservasContainer.contains(button)) {
+            const idReserva = button.dataset.id;
             
             if (confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
+                const managementCode = prompt('Ingresa el código de gestión que entregó el cliente para esta reserva:');
+                if (managementCode === null) {
+                    return;
+                }
                 try {
-                    const response = await fetch(window.hotelApiUrl(`/api/reservas/${idReserva}`), {
-                        method: 'DELETE'
+                    const response = await fetch(window.hotelApiUrl(`/api/admin/reservas/${idReserva}`), {
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ managementCode: managementCode.trim() })
                     });
                     const resultado = await response.json();
 
@@ -313,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         gestionMessageDiv.textContent = resultado.message;
                         gestionMessageDiv.style.color = 'green';
                         // Eliminar la fila de la tabla
-                        event.target.closest('tr').remove();
+                        button.closest('tr').remove();
                     } else {
                         gestionMessageDiv.textContent = `Error: ${resultado.message}`;
                         gestionMessageDiv.style.color = 'red';
@@ -374,11 +441,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const resultado = await response.json();
 
-                adminMessageDiv.textContent = resultado.message;
+                adminMessageDiv.textContent = response.ok && resultado.rol
+                    ? `${resultado.message} Rol asignado: ${resultado.rol}.`
+                    : resultado.message;
                 adminMessageDiv.style.color = response.ok ? 'green' : 'red';
 
                 if (response.ok) {
                     formCrearAdmin.reset();
+                    await cargarPerfilesAdministrador();
+                    await cargarAdministradoresParaEliminar();
                 }
             } catch (error) {
                 console.error('Error al crear administrador:', error);
@@ -395,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAdminEliminar = document.getElementById('select-admin-eliminar');
     const adminList = document.getElementById('admin-list');
     const adminListMessage = document.getElementById('admin-list-message');
+    let currentAdminId = null;
 
     const cargarPerfilesAdministrador = async () => {
         try {
@@ -406,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const table = document.createElement('table');
             const header = document.createElement('tr');
-            for (const label of ['Nombre', 'Correo', 'Rol']) {
+            for (const label of ['Nombre', 'Correo', 'Rol', 'Acción']) {
                 const cell = document.createElement('th');
                 cell.textContent = label;
                 header.appendChild(cell);
@@ -415,15 +487,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
             administradores.forEach(admin => {
                 const row = document.createElement('tr');
-                for (const value of [admin.Nombre, admin.Correo, admin.Rol]) {
+                for (const value of [admin.Nombre, admin.Correo]) {
                     const cell = document.createElement('td');
                     cell.textContent = value || '';
                     row.appendChild(cell);
                 }
+
+                const roleCell = document.createElement('td');
+                const roleSelect = document.createElement('select');
+                roleSelect.setAttribute('aria-label', `Rol de ${admin.Nombre}`);
+                for (const role of ['Administrador', 'Operador']) {
+                    const option = document.createElement('option');
+                    option.value = role;
+                    option.textContent = role;
+                    option.selected = role === admin.Rol;
+                    roleSelect.appendChild(option);
+                }
+                roleCell.appendChild(roleSelect);
+                row.appendChild(roleCell);
+
+                const actionCell = document.createElement('td');
+                const saveButton = document.createElement('button');
+                saveButton.type = 'button';
+                saveButton.textContent = 'Guardar rol';
+                saveButton.dataset.adminId = admin.idAdministrador;
+                saveButton.disabled = Number(admin.idAdministrador) === Number(currentAdminId);
+                actionCell.appendChild(saveButton);
+                row.appendChild(actionCell);
                 table.appendChild(row);
             });
             adminList.replaceChildren(table);
             adminListMessage.textContent = '';
+
+            table.addEventListener('click', async event => {
+                const button = event.target.closest('button[data-admin-id]');
+                if (!button || !table.contains(button)) {
+                    return;
+                }
+
+                const row = button.closest('tr');
+                const selectedRole = row.querySelector('select').value;
+                button.disabled = true;
+                adminListMessage.textContent = 'Guardando rol…';
+                adminListMessage.style.color = '';
+                try {
+                    const response = await fetch(window.hotelApiUrl(`/api/admin/${button.dataset.adminId}/role`), {
+                        method: 'PUT',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rol: selectedRole })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.message || 'No se pudo actualizar el rol.');
+                    }
+
+                    adminListMessage.textContent = result.message;
+                    adminListMessage.style.color = 'green';
+                    await cargarPerfilesAdministrador();
+                    await cargarAdministradoresParaEliminar();
+                } catch (error) {
+                    console.error('Error al actualizar el rol:', error);
+                    adminListMessage.textContent = error.message;
+                    adminListMessage.style.color = 'red';
+                    button.disabled = false;
+                }
+            });
         } catch (error) {
             console.error('Error al cargar perfiles y roles:', error);
             adminListMessage.textContent = error.message;

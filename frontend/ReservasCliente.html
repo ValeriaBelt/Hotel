@@ -26,14 +26,15 @@
 
     <main style="padding: 40px;">
         <h3>Busca tus Reservas</h3>
-        <p>Ingresa el correo electrónico o el número de teléfono que usaste al reservar.</p>
+        <p>Ingresa el código de gestión que recibiste al confirmar la reserva. Por seguridad, el correo o teléfono por sí solos no permiten consultar ni cancelar reservas.</p>
+        <p>Las reservas anteriores a este cambio no tienen código de gestión; para esas reservas, comunícate con el hotel.</p>
         <div id="gestion-message" style="margin-top: 15px;"></div>
 
         <form id="form-buscar-reservas-cliente" class="reservas" style="margin-top: 20px;">
-            <label for="termino-busqueda">Correo o Teléfono:</label><br>
-            <input type="text" id="termino-busqueda" name="termino-busqueda" placeholder="ejemplo@correo.com o 3001234567" required><br>
+            <label for="codigo-gestion-reserva">Código de gestión:</label><br>
+            <input type="text" id="codigo-gestion-reserva" name="codigo-gestion-reserva" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" autocomplete="off" autocapitalize="off" spellcheck="false" required><br>
             <div class="form-submit-container">
-                <button type="submit">Buscar mis Reservas</button>
+                <button type="submit">Consultar mi reserva</button>
             </div>
         </form>
 

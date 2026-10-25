@@ -11,6 +11,12 @@ const path = require('path');
 const { randomBytes } = require('node:crypto');
 const { createAdminSecurity } = require('./admin-security');
 const { hashPassword } = require('./security-service');
+const {
+    createReservationManagementCode,
+    hashReservationManagementCode,
+    isValidDate,
+    validateReservationInput
+} = require('./reservation-security');
 
 function loadMfaEncryptionKey() {
     const configuredKey = process.env.HOTEL_MFA_ENCRYPTION_KEY;
@@ -67,7 +73,7 @@ app.use(cors({
     },
     credentials: true
 }));
-app.use(express.json()); 
+app.use(express.json({ limit: '32kb' }));
 app.use(morgan('combined')); 
 app.use('/backend/controlador', express.static(path.join(__dirname, 'controlador')));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
@@ -98,6 +104,31 @@ const startServer = async () => {
         console.log('Conectado a la base de datos SQL Server.');
         const adminSecurity = createAdminSecurity({ pool, sql, encryptionKey: mfaEncryptionKey });
         await adminSecurity.initialize();
+        await pool.request().query(`
+            IF OBJECT_ID('dbo.ReservationManagementAccess', 'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.ReservationManagementAccess (
+                    ReservationId INT NOT NULL
+                        CONSTRAINT PK_ReservationManagementAccess PRIMARY KEY,
+                    TokenHash CHAR(64) NOT NULL,
+                    CreatedAt DATETIME2 NOT NULL
+                        CONSTRAINT DF_ReservationManagementAccess_CreatedAt DEFAULT SYSUTCDATETIME(),
+                    CONSTRAINT FK_ReservationManagementAccess_Reservas
+                        FOREIGN KEY (ReservationId) REFERENCES dbo.Reservas (idReserva) ON DELETE CASCADE
+                );
+            END;
+
+            IF NOT EXISTS (
+                SELECT 1
+                FROM sys.indexes
+                WHERE object_id = OBJECT_ID('dbo.ReservationManagementAccess')
+                    AND name = 'UX_ReservationManagementAccess_TokenHash'
+            )
+            BEGIN
+                CREATE UNIQUE INDEX UX_ReservationManagementAccess_TokenHash
+                    ON dbo.ReservationManagementAccess (TokenHash);
+            END;
+        `);
 
 
 
@@ -127,21 +158,23 @@ const startServer = async () => {
             adminSecurity.requireSession,
             adminSecurity.requireRoles('Administrador', 'Operador'),
             async (req, res) => {
-            const { numero, tipo, descripcion, precio } = req.body;
-        
-            if (numero === undefined || numero === null || numero === '' ||
-                precio === undefined || precio === null || precio === '' ||
-                !tipo || tipo.trim() === '' || !descripcion || descripcion.trim() === '') {
+            const { numero, tipo, descripcion, precio } = req.body || {};
+            const roomNumber = Number(numero);
+            const nightlyPrice = Number(precio);
+            if (!Number.isSafeInteger(roomNumber) || roomNumber <= 0 || roomNumber > 2147483647 ||
+                typeof tipo !== 'string' || !tipo.trim() || tipo.trim().length > 50 ||
+                typeof descripcion !== 'string' || !descripcion.trim() || descripcion.length > 4000 ||
+                !Number.isFinite(nightlyPrice) || nightlyPrice < 0 || nightlyPrice > 99999999.99) {
                 return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
             }
         
             try {
         
                 const result = await pool.request()
-                    .input('numero', sql.Int, numero)
-                    .input('tipo', sql.NVarChar, tipo)
-                    .input('descripcion', sql.NVarChar, descripcion)
-                    .input('precio', sql.Decimal(10, 2), precio)
+                    .input('numero', sql.Int, roomNumber)
+                    .input('tipo', sql.NVarChar(50), tipo.trim())
+                    .input('descripcion', sql.NVarChar(4000), descripcion.trim())
+                    .input('precio', sql.Decimal(10, 2), nightlyPrice)
                     .query('INSERT INTO Habitaciones (NumeroHabitacion, Tipo, Descripcion, PrecioPorNoche) VALUES (@numero, @tipo, @descripcion, @precio)');
         
                 if (result.rowsAffected[0] > 0) {
@@ -162,22 +195,29 @@ const startServer = async () => {
             adminSecurity.requireRoles('Administrador', 'Operador'),
             async (req, res) => {
             const { id } = req.params;
-            const { tipo, descripcion, precio } = req.body;
-            
+            const { tipo, descripcion, precio } = req.body || {};
+            if (!/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) > 2147483647 ||
+                (tipo !== undefined && (typeof tipo !== 'string' || tipo.trim().length > 50)) ||
+                (descripcion !== undefined && (typeof descripcion !== 'string' || descripcion.length > 4000)) ||
+                (precio !== undefined && (!Number.isFinite(Number(precio)) ||
+                    Number(precio) < 0 || Number(precio) > 99999999.99))) {
+                return res.status(400).json({ message: 'Los datos de la habitación no son válidos.' });
+            }
+
             let updateFields = [];
             let request = pool.request().input('id', sql.Int, id);
         
             if (tipo !== undefined && tipo !== null && tipo.trim() !== '') {
                 updateFields.push('Tipo = @tipo');
-                request.input('tipo', sql.NVarChar, tipo);
+                request.input('tipo', sql.NVarChar(50), tipo.trim());
             }
             if (descripcion !== undefined && descripcion !== null) { 
                 updateFields.push('Descripcion = @descripcion');
-                request.input('descripcion', sql.NVarChar, descripcion);
+                request.input('descripcion', sql.NVarChar(4000), descripcion.trim());
             }
             if (precio !== undefined && precio !== null && precio !== '') {
                 updateFields.push('PrecioPorNoche = @precio');
-                request.input('precio', sql.Decimal(10, 2), precio);
+                request.input('precio', sql.Decimal(10, 2), Number(precio));
             }
         
             if (updateFields.length === 0) {
@@ -213,9 +253,9 @@ const startServer = async () => {
         
         app.get('/api/habitaciones/disponibles', async (req, res) => {
             const { llegada, salida, tipo } = req.query;
-        
-            if (!llegada || !salida) {
-                return res.status(400).json({ message: 'Las fechas de llegada y salida son obligatorias.' });
+            if (!isValidDate(llegada) || !isValidDate(salida) || llegada >= salida ||
+                (tipo !== undefined && (typeof tipo !== 'string' || tipo.length > 50))) {
+                return res.status(400).json({ message: 'Las fechas y el tipo de habitación no son válidos.' });
             }
         
             try {
@@ -249,10 +289,17 @@ const startServer = async () => {
 
         app.get('/api/habitaciones/:id', async (req, res) => {
             const { id } = req.params;
+            if (!/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) > 2147483647) {
+                return res.status(400).json({ message: 'El identificador de habitación no es válido.' });
+            }
             try {
                 const result = await pool.request()
                     .input('id', sql.Int, id)
-                    .query('SELECT * FROM Habitaciones WHERE idHabitacion = @id');
+                    .query(`
+                        SELECT idHabitacion, NumeroHabitacion, Tipo, Descripcion, PrecioPorNoche
+                        FROM Habitaciones
+                        WHERE idHabitacion = @id
+                    `);
         
                 if (result.recordset.length > 0) {
                     res.json(result.recordset[0]);
@@ -266,50 +313,102 @@ const startServer = async () => {
         });
 
         app.post('/api/reservas', async (req, res) => {
-            const { idHabitacion, fechaLlegada, fechaSalida, nombre, email, telefono } = req.body;
-
-            if (!idHabitacion || !fechaLlegada || !fechaSalida || !nombre || !email || !telefono) {
-                return res.status(400).json({ message: 'Todos los campos son obligatorios para la reserva.' });
+            const reservation = validateReservationInput(req.body);
+            if (!reservation) {
+                return res.status(400).json({ message: 'Revisa los datos de la reserva: fechas válidas, habitación, correo y teléfono de 10 dígitos.' });
             }
 
+            const managementCode = createReservationManagementCode();
+            const managementCodeHash = hashReservationManagementCode(managementCode);
             const transaction = new sql.Transaction(pool);
             try {
                 await transaction.begin();
-                const request = new sql.Request(transaction);
 
-                // Busca si el cliente ya existe por su correo
-                let clienteResult = await request.input('email', sql.NVarChar, email)
-                .query('SELECT idCliente FROM Clientes WHERE Email = @email');
-                
-                let idCliente;
+                const roomRequest = new sql.Request(transaction)
+                    .input('idHabitacion', sql.Int, reservation.idHabitacion)
+                    .input('fechaLlegada', sql.Date, reservation.fechaLlegada)
+                    .input('fechaSalida', sql.Date, reservation.fechaSalida);
+                const roomResult = await roomRequest.query(`
+                    SELECT h.idHabitacion
+                    FROM Habitaciones AS h WITH (UPDLOCK, HOLDLOCK)
+                    WHERE h.idHabitacion = @idHabitacion;
 
-                if (clienteResult.recordset.length > 0) {
-                    // Si el cliente existe, se usa su ID
-                    idCliente = clienteResult.recordset[0].idCliente;
-                } else {
-                    // Si el cliente no existe, se crea y obtiene su nuevo ID
-                    const insertClienteResult = await request.input('nombre', sql.NVarChar, nombre)
-                    .input('telefono', sql.NVarChar, telefono)
-                    .query('INSERT INTO Clientes (Nombre, Email, Telefono) OUTPUT INSERTED.idCliente VALUES (@nombre, @email, @telefono)');
-                    idCliente = insertClienteResult.recordset[0].idCliente;
+                    IF EXISTS (
+                        SELECT 1
+                        FROM Reservas
+                        WHERE idHabitacion = @idHabitacion
+                            AND FechaEntrada < @fechaSalida
+                            AND FechaSalida > @fechaLlegada
+                    )
+                        SELECT CONVERT(bit, 1) AS IsUnavailable;
+                    ELSE
+                        SELECT CONVERT(bit, 0) AS IsUnavailable;
+                `);
+                if (roomResult.recordsets[0].length === 0) {
+                    await transaction.rollback();
+                    return res.status(404).json({ message: 'La habitación seleccionada no existe.' });
+                }
+                const availability = roomResult.recordsets[1]?.[0];
+                if (!availability) {
+                    throw new Error('No se pudo verificar la disponibilidad de la habitación.');
+                }
+                if (availability.IsUnavailable) {
+                    await transaction.rollback();
+                    return res.status(409).json({ message: 'La habitación ya no está disponible para esas fechas.' });
                 }
 
-                // Crear la reserva con el idCliente obtenido
-                const reservaRequest = new sql.Request(transaction); 
-                const resultReserva = await reservaRequest
-                    .input('idHabitacion', sql.Int, idHabitacion)
-                    .input('idCliente', sql.Int, idCliente)
-                    .input('fechaEntrada', sql.Date, fechaLlegada)
-                    .input('fechaSalida', sql.Date, fechaSalida)
-                    .query('INSERT INTO Reservas (idHabitacion, idCliente, FechaEntrada, FechaSalida) VALUES (@idHabitacion, @idCliente, @fechaEntrada, @fechaSalida)');
+                const clientRequest = new sql.Request(transaction)
+                    .input('email', sql.VarChar(100), reservation.email)
+                    .input('nombre', sql.VarChar(100), reservation.nombre)
+                    .input('telefono', sql.VarChar(20), reservation.telefono);
+                const clientResult = await clientRequest.query(
+                    'SELECT idCliente FROM Clientes WHERE Email = @email'
+                );
+                let idCliente = clientResult.recordset[0]?.idCliente;
+                if (!idCliente) {
+                    const insertClientResult = await new sql.Request(transaction)
+                        .input('email', sql.VarChar(100), reservation.email)
+                        .input('nombre', sql.VarChar(100), reservation.nombre)
+                        .input('telefono', sql.VarChar(20), reservation.telefono)
+                        .query(`
+                            INSERT INTO Clientes (Nombre, Email, Telefono)
+                            OUTPUT INSERTED.idCliente
+                            VALUES (@nombre, @email, @telefono)
+                        `);
+                    idCliente = insertClientResult.recordset[0]?.idCliente;
+                }
+                if (!idCliente) {
+                    throw new Error('No se pudo identificar al cliente de la reserva.');
+                }
 
-                if (resultReserva.rowsAffected[0] > 0) {
-                    await transaction.commit();
-                    res.status(201).json({ message: 'Reserva creada exitosamente.' });
-                } else {
+                const resultReserva = await new sql.Request(transaction)
+                    .input('idHabitacion', sql.Int, reservation.idHabitacion)
+                    .input('idCliente', sql.Int, idCliente)
+                    .input('fechaEntrada', sql.Date, reservation.fechaLlegada)
+                    .input('fechaSalida', sql.Date, reservation.fechaSalida)
+                    .query(`
+                        INSERT INTO Reservas (idHabitacion, idCliente, FechaEntrada, FechaSalida)
+                        OUTPUT INSERTED.idReserva
+                        VALUES (@idHabitacion, @idCliente, @fechaEntrada, @fechaSalida)
+                    `);
+                const reservationId = resultReserva.recordset[0]?.idReserva;
+                if (!reservationId) {
                     throw new Error('No se pudo crear la reserva.');
                 }
 
+                await new sql.Request(transaction)
+                    .input('reservationId', sql.Int, reservationId)
+                    .input('tokenHash', sql.Char(64), managementCodeHash)
+                    .query(`
+                        INSERT INTO dbo.ReservationManagementAccess (ReservationId, TokenHash)
+                        VALUES (@reservationId, @tokenHash)
+                    `);
+                await transaction.commit();
+                res.setHeader('Cache-Control', 'no-store');
+                res.status(201).json({
+                    message: 'Reserva creada exitosamente.',
+                    managementCode
+                });
             } catch (err) {
                 console.error('Error en la transacción de reserva:', err.stack);
                 try {
@@ -317,7 +416,6 @@ const startServer = async () => {
                 } catch (rollbackErr) {
                     console.error('Error al hacer rollback de la transacción:', rollbackErr.stack);
                 }
-                // Verificar si es un error de clave única
                 if (err.number === 2627 || err.number === 2601) {
                     return res.status(409).json({ message: 'Error de conflicto. Posiblemente un dato duplicado.' });
                 }
@@ -325,57 +423,167 @@ const startServer = async () => {
             }
         });
 
-        // Endpoint para buscar reservas por email o teléfono del cliente
-        app.get('/api/reservas/buscar', async (req, res) => {
-            const { termino } = req.query;
-        
-            if (!termino) {
-                return res.status(400).json({ message: 'Se requiere un término de búsqueda (email o teléfono).' });
+        app.post('/api/reservas/consultar', async (req, res) => {
+            const tokenHash = hashReservationManagementCode(req.body?.managementCode);
+            if (!tokenHash) {
+                return res.status(400).json({ message: 'Ingresa el código de gestión completo.' });
             }
-        
+
             try {
-                const request = pool.request();
-                const result = await request.input('termino', sql.NVarChar, `%${termino}%`)
+                const result = await pool.request()
+                    .input('tokenHash', sql.Char(64), tokenHash)
                     .query(`
-                        SELECT 
-                            r.idReserva, r.FechaEntrada, r.FechaSalida,
-                            h.NumeroHabitacion, h.Tipo,
-                            c.Nombre, c.Email, c.Telefono
-                        FROM Reservas r
-                        JOIN Habitaciones h ON r.idHabitacion = h.idHabitacion
-                        JOIN Clientes c ON r.idCliente = c.idCliente
-                        WHERE c.Email LIKE @termino OR c.Telefono LIKE @termino
-                        ORDER BY r.FechaEntrada DESC
+                        SELECT TOP (1)
+                            r.idReserva,
+                            r.FechaEntrada,
+                            r.FechaSalida,
+                            h.NumeroHabitacion,
+                            h.Tipo
+                        FROM dbo.ReservationManagementAccess AS access
+                        INNER JOIN Reservas AS r ON r.idReserva = access.ReservationId
+                        INNER JOIN Habitaciones AS h ON h.idHabitacion = r.idHabitacion
+                        WHERE access.TokenHash = @tokenHash
                     `);
-                
+                if (result.recordset.length === 0) {
+                    return res.status(404).json({ message: 'No se encontró una reserva con ese código.' });
+                }
+                res.setHeader('Cache-Control', 'no-store');
                 res.json(result.recordset);
-        
             } catch (err) {
-                console.error('Error al buscar reservas:', err.stack);
-                res.status(500).json({ message: 'Error interno del servidor al buscar reservas.' });
+                console.error('Error al consultar reserva con código de gestión:', err.stack);
+                res.status(500).json({ message: 'No se pudo consultar la reserva.' });
             }
         });
 
-        // Endpoint para cancelar una reserva
-        app.delete('/api/reservas/:id', async (req, res) => {
+        app.post('/api/reservas/:id/cancelar', async (req, res) => {
             const { id } = req.params;
+            const tokenHash = hashReservationManagementCode(req.body?.managementCode);
+            if (!/^\d+$/.test(id) || Number(id) > 2147483647 || !tokenHash) {
+                return res.status(400).json({ message: 'El identificador de reserva o el código de gestión no son válidos.' });
+            }
+
+            const transaction = new sql.Transaction(pool);
             try {
-                const result = await pool.request().input('id', sql.Int, id).query('DELETE FROM Reservas WHERE idReserva = @id');
-                if (result.rowsAffected[0] > 0) res.json({ message: 'Reserva cancelada exitosamente.' });
-                else res.status(404).json({ message: 'No se encontró la reserva para cancelar.' });
+                await transaction.begin();
+                const accessResult = await new sql.Request(transaction)
+                    .input('reservationId', sql.Int, id)
+                    .input('tokenHash', sql.Char(64), tokenHash)
+                    .query(`
+                        DELETE FROM dbo.ReservationManagementAccess
+                        WHERE ReservationId = @reservationId AND TokenHash = @tokenHash;
+                        SELECT @@ROWCOUNT AS AccessRevoked;
+                    `);
+                if (accessResult.recordset[0]?.AccessRevoked !== 1) {
+                    await transaction.rollback();
+                    return res.status(404).json({ message: 'No se encontró una reserva con ese código.' });
+                }
+                await new sql.Request(transaction)
+                    .input('reservationId', sql.Int, id)
+                    .query('DELETE FROM Reservas WHERE idReserva = @reservationId');
+                await transaction.commit();
+                res.json({ message: 'Reserva cancelada exitosamente.' });
             } catch (err) {
-                console.error('Error al cancelar la reserva:', err.stack);
-                res.status(500).json({ message: 'Error interno del servidor.' });
+                console.error('Error al cancelar reserva con código de gestión:', err.stack);
+                try {
+                    await transaction.rollback();
+                } catch (rollbackErr) {
+                    console.error('Error al revertir cancelación de reserva:', rollbackErr.stack);
+                }
+                res.status(500).json({ message: 'No se pudo cancelar la reserva.' });
             }
         });
+
+        app.post(
+            '/api/admin/reservas/buscar',
+            adminSecurity.requireRoles('Administrador', 'Operador'),
+            async (req, res) => {
+                const { termino } = req.body || {};
+                if (typeof termino !== 'string' || !termino.trim() || termino.length > 100) {
+                    return res.status(400).json({ message: 'Ingresa un correo o teléfono válido para buscar reservas.' });
+                }
+                try {
+                    const result = await pool.request()
+                        .input('termino', sql.VarChar(102), `%${termino.trim()}%`)
+                        .query(`
+                            SELECT
+                                r.idReserva,
+                                r.FechaEntrada,
+                                r.FechaSalida,
+                                h.NumeroHabitacion,
+                                h.Tipo,
+                                c.Nombre,
+                                c.Email,
+                                c.Telefono
+                            FROM Reservas AS r
+                            INNER JOIN Habitaciones AS h ON h.idHabitacion = r.idHabitacion
+                            INNER JOIN Clientes AS c ON c.idCliente = r.idCliente
+                            WHERE c.Email LIKE @termino OR c.Telefono LIKE @termino
+                            ORDER BY r.FechaEntrada DESC
+                        `);
+                    res.setHeader('Cache-Control', 'no-store');
+                    res.json(result.recordset);
+                } catch (err) {
+                    console.error('Error al buscar reservas desde el panel:', err.stack);
+                    res.status(500).json({ message: 'No se pudieron buscar las reservas.' });
+                }
+            }
+        );
+
+        app.delete(
+            '/api/admin/reservas/:id',
+            adminSecurity.requireRoles('Administrador', 'Operador'),
+            async (req, res) => {
+                const { id } = req.params;
+                const tokenHash = hashReservationManagementCode(req.body?.managementCode);
+                if (!/^\d+$/.test(id) || Number(id) > 2147483647 || !tokenHash) {
+                    return res.status(400).json({ message: 'El identificador o el código de gestión no son válidos.' });
+                }
+                const transaction = new sql.Transaction(pool);
+                try {
+                    await transaction.begin();
+                    const accessResult = await new sql.Request(transaction)
+                        .input('reservationId', sql.Int, id)
+                        .input('tokenHash', sql.Char(64), tokenHash)
+                        .query(`
+                            SELECT TOP (1) ReservationId
+                            FROM dbo.ReservationManagementAccess WITH (UPDLOCK, HOLDLOCK)
+                            WHERE ReservationId = @reservationId AND TokenHash = @tokenHash
+                        `);
+                    if (accessResult.recordset.length === 0) {
+                        await transaction.rollback();
+                        return res.status(403).json({ message: 'El código de gestión no es válido para esta reserva.' });
+                    }
+                    const result = await new sql.Request(transaction)
+                        .input('reservationId', sql.Int, id)
+                        .query('DELETE FROM Reservas WHERE idReserva = @reservationId');
+                    if (result.rowsAffected[0] === 0) {
+                        await transaction.rollback();
+                        return res.status(404).json({ message: 'No se encontró la reserva para cancelar.' });
+                    }
+                    await transaction.commit();
+                    res.json({ message: 'Reserva cancelada exitosamente.' });
+                } catch (err) {
+                    console.error('Error al cancelar reserva desde el panel:', err.stack);
+                    try {
+                        await transaction.rollback();
+                    } catch (rollbackErr) {
+                        console.error('Error al revertir cancelación de reserva:', rollbackErr.stack);
+                    }
+                    res.status(500).json({ message: 'No se pudo cancelar la reserva.' });
+                }
+            }
+        );
 
         // Endpoint para registrar un nuevo administrador
         app.post('/api/admin/register', adminSecurity.requireRoles('Administrador'), async (req, res) => {
-            const { nombre, telefono, correo, clave, rol } = req.body;
+            const { nombre, telefono, correo, clave, rol } = req.body || {};
 
             if (typeof nombre !== 'string' || typeof telefono !== 'string' ||
                 typeof correo !== 'string' || typeof clave !== 'string' ||
-                !nombre.trim() || !telefono.trim() || !correo.trim() ||
+                !nombre.trim() || nombre.trim().length > 100 ||
+                !/^\d{10}$/.test(telefono) ||
+                !correo.trim() || correo.trim().length > 100 ||
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim()) ||
                 clave.length < 12 || clave.length > 128 ||
                 !['Administrador', 'Operador'].includes(rol)) {
                 return res.status(400).json({
@@ -386,9 +594,9 @@ const startServer = async () => {
             try {
                 const request = pool.request();
                 const result = await request
-                    .input('nombre', sql.NVarChar, nombre)
-                    .input('telefono', sql.NVarChar, telefono)
-                    .input('correo', sql.NVarChar, correo)
+                    .input('nombre', sql.VarChar(100), nombre.trim())
+                    .input('telefono', sql.VarChar(20), telefono)
+                    .input('correo', sql.VarChar(100), correo.trim())
                     .input('clave', sql.VarChar(255), await hashPassword(clave))
                     .query(`
                         INSERT INTO Administrador (Nombre, Telefono, Correo, Clave)
@@ -398,7 +606,7 @@ const startServer = async () => {
 
                 if (result.rowsAffected[0] > 0) {
                     await adminSecurity.recordAdminCreated(result.recordset[0].idAdministrador, rol);
-                    res.status(201).json({ message: 'Administrador creado exitosamente.' });
+                    res.status(201).json({ message: 'Administrador creado exitosamente.', rol });
                 } else {
                     throw new Error('No se pudo crear el administrador.');
                 }
@@ -424,6 +632,7 @@ const startServer = async () => {
                     LEFT JOIN dbo.AdminSecurity s ON s.AdminId = a.idAdministrador
                     ORDER BY a.Nombre, a.Correo
                 `);
+                res.setHeader('Cache-Control', 'no-store');
                 res.json(result.recordset);
             } catch (err) {
                 console.error('Error al obtener todos los administradores:', err.stack);
@@ -431,10 +640,33 @@ const startServer = async () => {
             }
         });
 
+        app.put('/api/admin/:id/role', adminSecurity.requireRoles('Administrador'), async (req, res) => {
+            const { id } = req.params;
+            const { rol } = req.body || {};
+            if (!/^\d+$/.test(id) || Number(id) > 2147483647 ||
+                !['Administrador', 'Operador'].includes(rol)) {
+                return res.status(400).json({ message: 'El identificador o el rol no son válidos.' });
+            }
+            if (Number(id) === req.admin.id) {
+                return res.status(400).json({ message: 'No puedes cambiar el rol de la cuenta con la que tienes la sesión activa.' });
+            }
+
+            try {
+                const updated = await adminSecurity.setAdminRole(Number(id), rol, req.admin.id);
+                if (!updated) {
+                    return res.status(404).json({ message: 'No se encontró el perfil que deseas actualizar.' });
+                }
+                res.json({ message: `Rol actualizado a ${rol}.`, rol });
+            } catch (err) {
+                console.error('Error al actualizar el rol del administrador:', err.stack);
+                res.status(500).json({ message: 'No se pudo actualizar el rol del perfil.' });
+            }
+        });
+
         // Endpoint para eliminar un administrador
         app.delete('/api/admin/:id', adminSecurity.requireRoles('Administrador'), async (req, res) => {
             const { id } = req.params;
-            if (!/^\d+$/.test(id)) {
+            if (!/^\d+$/.test(id) || Number(id) > 2147483647) {
                 return res.status(400).json({ message: 'El identificador de administrador no es válido.' });
             }
             if (Number(id) === req.admin.id) {
@@ -461,7 +693,8 @@ const startServer = async () => {
         const sslPath = path.join(__dirname, 'security');
         const sslOptions = {
             key: fs.readFileSync(path.join(sslPath, 'server.key')),
-            cert: fs.readFileSync(path.join(sslPath, 'server.crt'))
+            cert: fs.readFileSync(path.join(sslPath, 'server.crt')),
+            minVersion: 'TLSv1.2'
         };
 
         const port = 3443; 
@@ -469,7 +702,7 @@ const startServer = async () => {
             console.log('----------------------------------------------------');
             console.log(`SERVIDOR HotelSys OPERANDO EN MODO SEGURO (HTTPS)`);
             console.log(`URL: https://localhost:${port}`);
-            console.log('Protecciones activas: TLS 1.3, Rate-Limit, Helmet');
+            console.log('Protecciones activas: TLS 1.2+, Rate-Limit, Helmet');
             console.log('----------------------------------------------------');
         });
 

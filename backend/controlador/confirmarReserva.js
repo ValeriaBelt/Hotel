@@ -27,20 +27,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         const noches = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const precioTotal = noches * habitacion.PrecioPorNoche;
 
-        const detalleHTML = `
-            <p><strong>Habitación:</strong> N° ${habitacion.NumeroHabitacion} - ${habitacion.Tipo}</p>
-            <p><strong>Fecha de Llegada:</strong> ${fechaLlegada}</p>
-            <p><strong>Fecha de Salida:</strong> ${fechaSalida}</p>
-            <p><strong>Total Noches:</strong> ${noches}</p>
-            <p><strong>Precio por Noche:</strong> $${new Intl.NumberFormat('es-CO').format(habitacion.PrecioPorNoche)}</p>
-            <hr>
-            <p><strong>Precio Total de la Estancia:</strong> $${new Intl.NumberFormat('es-CO').format(precioTotal)}</p>
-        `;
-        detalleContainer.innerHTML = detalleHTML;
+        const createDetail = (label, value) => {
+            const paragraph = document.createElement('p');
+            const heading = document.createElement('strong');
+            heading.textContent = `${label}: `;
+            paragraph.append(heading, value);
+            return paragraph;
+        };
+        const roomDetail = createDetail(
+            'Habitación',
+            `N° ${habitacion.NumeroHabitacion} - ${habitacion.Tipo}`
+        );
+        const priceBreak = document.createElement('hr');
+        detalleContainer.replaceChildren(
+            roomDetail,
+            createDetail('Fecha de Llegada', fechaLlegada),
+            createDetail('Fecha de Salida', fechaSalida),
+            createDetail('Total Noches', String(noches)),
+            createDetail('Precio por Noche', `$${new Intl.NumberFormat('es-CO').format(habitacion.PrecioPorNoche)}`),
+            priceBreak,
+            createDetail('Precio Total de la Estancia', `$${new Intl.NumberFormat('es-CO').format(precioTotal)}`)
+        );
 
     } catch (error) {
         console.error('Error:', error);
-        detalleContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        detalleContainer.textContent = error.message;
+        detalleContainer.style.color = 'red';
     }
 
     
@@ -54,7 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const telefonoRegex = /^\d{10}$/;
         if (!telefonoRegex.test(telefonoCliente)) {
-            mensajeConfirmacion.innerHTML = '<p style="color: red;">El teléfono debe contener exactamente 10 dígitos numéricos.</p>';
+            mensajeConfirmacion.textContent = 'El teléfono debe contener exactamente 10 dígitos numéricos.';
+            mensajeConfirmacion.style.color = 'red';
             return;
         }
 
@@ -79,15 +92,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const resultado = await response.json();
 
             if (response.ok) {
-                mensajeConfirmacion.innerHTML = `<p style="color: green; font-weight: bold;">${resultado.message} ¡Gracias por su reserva!</p>`;
+                const message = document.createElement('p');
+                message.style.color = 'green';
+                message.style.fontWeight = 'bold';
+                message.textContent = `${resultado.message} ¡Gracias por su reserva! Guarda el código siguiente: solo se muestra una vez y lo necesitarás para consultar o cancelar.`;
+                const codeLabel = document.createElement('p');
+                codeLabel.textContent = 'Código de gestión (se muestra una sola vez):';
+                const code = document.createElement('code');
+                code.textContent = resultado.managementCode;
+                code.style.wordBreak = 'break-all';
+                codeLabel.appendChild(document.createElement('br'));
+                codeLabel.appendChild(code);
+                const warning = document.createElement('p');
+                warning.textContent = 'Guárdalo ahora. Sin este código, no podrás consultar ni cancelar la reserva desde la página.';
+                mensajeConfirmacion.replaceChildren(message, codeLabel, warning);
                 formConfirmar.reset(); 
                 formConfirmar.style.display = 'none'; 
             } else {
-                mensajeConfirmacion.innerHTML = `<p style="color: red;">Error: ${resultado.message}</p>`;
+                mensajeConfirmacion.textContent = `Error: ${resultado.message}`;
+                mensajeConfirmacion.style.color = 'red';
             }
         } catch (error) {
             console.error('Error al confirmar la reserva:', error);
-            mensajeConfirmacion.innerHTML = '<p style="color: red;">No se pudo conectar con el servidor para confirmar la reserva.</p>';
+            mensajeConfirmacion.textContent = 'No se pudo conectar con el servidor para confirmar la reserva.';
+            mensajeConfirmacion.style.color = 'red';
         }
     });
 });

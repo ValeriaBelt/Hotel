@@ -2,82 +2,102 @@ document.addEventListener('DOMContentLoaded', () => {
     const formBuscarReservas = document.getElementById('form-buscar-reservas-cliente');
     const gestionMessageDiv = document.getElementById('gestion-message');
     const resultadosReservasContainer = document.getElementById('resultados-reservas-cliente');
+    const managementCodeInput = document.getElementById('codigo-gestion-reserva');
+    let activeManagementCode = null;
 
     formBuscarReservas.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const termino = document.getElementById('termino-busqueda').value;
+        const managementCode = managementCodeInput.value.trim();
+        activeManagementCode = null;
 
         try {
-            
-            resultadosReservasContainer.innerHTML = '<p>Buscando sus reservas...</p>';
+            resultadosReservasContainer.replaceChildren();
+            resultadosReservasContainer.textContent = 'Consultando la reserva…';
             gestionMessageDiv.textContent = '';
 
-            const response = await fetch(window.hotelApiUrl(`/api/reservas/buscar?termino=${encodeURIComponent(termino)}`));
-            const reservas = await response.json();
-
-            resultadosReservasContainer.innerHTML = ''; 
+            const response = await fetch(window.hotelApiUrl('/api/reservas/consultar'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ managementCode })
+            });
+            const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(reservas.message || 'Ocurrió un error al buscar.');
+                throw new Error(result.message || 'No se pudo consultar la reserva.');
             }
 
-            if (reservas.length === 0) {
-                resultadosReservasContainer.innerHTML = '<p>No se encontraron reservas con la información proporcionada. Por favor, verifique los datos e intente de nuevo.</p>';
-                return;
-            }
+            activeManagementCode = managementCode;
+            const reservation = result[0];
 
             const tabla = document.createElement('table');
             tabla.className = 'tabla-reservas';
-            tabla.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Habitación</th>
-                        <th>Tipo</th>
-                        <th>Fecha de Llegada</th>
-                        <th>Fecha de Salida</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${reservas.map(res => `
-                        <tr data-id-reserva="${res.idReserva}">
-                            <td>N° ${res.NumeroHabitacion}</td>
-                            <td>${res.Tipo}</td>
-                            <td>${new Date(res.FechaEntrada).toLocaleDateString()}</td>
-                            <td>${new Date(res.FechaSalida).toLocaleDateString()}</td>
-                            <td><button class="btn-cancelar" data-id="${res.idReserva}">Cancelar Reserva</button></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            `;
+            const header = document.createElement('tr');
+            for (const label of ['Habitación', 'Tipo', 'Fecha de Llegada', 'Fecha de Salida', 'Acción']) {
+                const cell = document.createElement('th');
+                cell.textContent = label;
+                header.appendChild(cell);
+            }
+            const tableHead = document.createElement('thead');
+            tableHead.appendChild(header);
+            tabla.appendChild(tableHead);
+
+            const row = document.createElement('tr');
+            row.dataset.idReserva = reservation.idReserva;
+            const values = [
+                `N° ${reservation.NumeroHabitacion}`,
+                reservation.Tipo,
+                new Date(reservation.FechaEntrada).toLocaleDateString(),
+                new Date(reservation.FechaSalida).toLocaleDateString()
+            ];
+            for (const value of values) {
+                const cell = document.createElement('td');
+                cell.textContent = value;
+                row.appendChild(cell);
+            }
+            const actionCell = document.createElement('td');
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'btn-cancelar';
+            cancelButton.dataset.id = reservation.idReserva;
+            cancelButton.textContent = 'Cancelar Reserva';
+            actionCell.appendChild(cancelButton);
+            row.appendChild(actionCell);
+            const tableBody = document.createElement('tbody');
+            tableBody.appendChild(row);
+            tabla.appendChild(tableBody);
             resultadosReservasContainer.appendChild(tabla);
-
-            // se limpia el formulario de búsqueda
-            formBuscarReservas.reset();
-
+            gestionMessageDiv.textContent = 'Reserva encontrada. El código permanece solo en esta página; no lo compartas.';
+            gestionMessageDiv.style.color = '';
         } catch (error) {
-            console.error('Error al buscar reservas:', error);
+            activeManagementCode = null;
+            console.error('Error al consultar reserva:', error);
             gestionMessageDiv.textContent = `Error: ${error.message}`;
             gestionMessageDiv.style.color = 'red';
-            resultadosReservasContainer.innerHTML = '';
+            resultadosReservasContainer.replaceChildren();
         }
     });
 
-    
     resultadosReservasContainer.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('btn-cancelar')) {
-            const idReserva = event.target.dataset.id;
-            
+        const button = event.target.closest('.btn-cancelar');
+        if (button && resultadosReservasContainer.contains(button) && activeManagementCode) {
             if (confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
                 try {
-                    const response = await fetch(window.hotelApiUrl(`/api/reservas/${idReserva}`), { method: 'DELETE' });
+                    const response = await fetch(window.hotelApiUrl(`/api/reservas/${button.dataset.id}/cancelar`), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ managementCode: activeManagementCode })
+                    });
                     const resultado = await response.json();
 
                     gestionMessageDiv.textContent = resultado.message;
                     gestionMessageDiv.style.color = response.ok ? 'green' : 'red';
 
-                    if (response.ok) event.target.closest('tr').remove();
+                    if (response.ok) {
+                        activeManagementCode = null;
+                        resultadosReservasContainer.replaceChildren();
+                        formBuscarReservas.reset();
+                    }
                 } catch (error) {
+                    console.error('Error al cancelar la reserva:', error);
                     gestionMessageDiv.textContent = 'Error de conexión al intentar cancelar la reserva.';
                     gestionMessageDiv.style.color = 'red';
                 }
